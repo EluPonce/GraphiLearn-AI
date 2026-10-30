@@ -1,0 +1,39 @@
+﻿# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Laravel
+**/vendor/
+**/storage/app/private/**
+**/storage/logs/**
+**/bootstrap/cache/*.php
+**/database/*.sqlite
+
+# React
+**/node_modules/
+**/public/build/
+**/dist/
+
+# Python
+**/.venv/
+**/venv/
+**/__pycache__/
+**/.pytest_cache/
+**/*.pyc
+
+# Modelos entrenados
+**/*.joblib
+**/*.pkl
+
+# Datos privados
+**/data/raw/
+**/data/private/
+
+# Archivos locales
+.idea/
+.vscode/
+*.log
+Thumbs.db

@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\Exercise;
+use App\Models\User;
+
+class ExercisePolicy
+{
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
+    public function view(User $user, Exercise $exercise): bool
+    {
+        return true;
+    }
+
+    /**
+     * Docente y administrador pueden crear ejercicios.
+     */
+    public function create(User $user): bool
+    {
+        return $user->esDocente() || $user->esAdministrador();
+    }
+
+    /**
+     * Docente y administrador pueden editar ejercicios.
+     */
+    public function update(User $user, Exercise $exercise): bool
+    {
+        return $user->esDocente() || $user->esAdministrador();
+    }
+
+    /**
+     * Solo el administrador puede eliminar ejercicios.
+     * Además, un ejercicio con actividades no puede eliminarse
+     * (enforced via restrictOnDelete en BD y en el service).
+     */
+    public function delete(User $user, Exercise $exercise): bool
+    {
+        return $user->esAdministrador();
+    }
+}
