@@ -108,7 +108,124 @@ Enterprise Architect permite generar y auditar la **Matriz de Trazabilidad Bidir
 
 ---
 
-## 5. Productividad: Ingeniería Directa y Generación de Código DDL
+## 5. Aspectos Relacionados con la Productividad
+
+El triángulo de productividad de GraphiLearn AI se fundamenta en la integración sinérgica de tres herramientas líderes: **Enterprise Architect**, **Trello** y **GitHub**:
+
+```mermaid
+flowchart TD
+    Trello["1. TRELLO (Productividad en Gestión)<br/>• Gestión Ágil con Tableros Kanban<br/>• Seguimiento de Sprints (0, 1, 2, 3)<br/>• Historias de Usuario (HU-01 a HU-17)<br/>• Límites WIP y Asignación de Tiempos"]
+    EA["2. ENTERPRISE ARCHITECT (Productividad en Diseño)<br/>• Modelado Visual UML 2.5<br/>• Navegación Interactiva por Doble Clic<br/>• Matriz de Trazabilidad Requisito-Código<br/>• Generación Automática de DDL PostgreSQL"]
+    GH["3. GITHUB (Productividad en Implementación)<br/>• Control de Versiones Distribuido GitFlow<br/>• Ramas feature/ y main Protegidas<br/>• Integración Continua (CI/CD Automático)<br/>• Trazabilidad Commit-Issue-Release"]
+
+    Trello <-->|Requisitos mapeados a Casos de Uso| EA
+    EA <-->|Estructura de Clases y DDL a Código| GH
+    GH <-->|Commits vinculados a Tarjetas del Sprint| Trello
+```
+
+### 5.1. Productividad con Enterprise Architect (Sparx Systems)
+* **Ingeniería Directa (Forward Engineering):** Ahorro del 80% del tiempo de codificación de base de datos generando automáticamente las tablas, tipos `ENUM`, claves foráneas e índices de PostgreSQL 17 desde el modelo de datos visual.
+* **Navegabilidad Bidireccional (Composite Diagrams):** Facilita la auditoría del proyecto al permitir que cualquier evaluador haga doble clic en un caso de uso y acceda de inmediato a su lógica de mensajes (secuencia) y clases de dominio asociadas.
+* **Generación Automatizada de Reportes Técnicos:** Exportación instantánea del diccionario de datos y especificaciones de software en formatos PDF y RTF mediante plantillas oficiales.
+
+### 5.2. Productividad con Trello
+* **Control Visual del Flujo de Trabajo (Kanban):** Organización de las 17 Historias de Usuario en listas ordenadas por estado (*Product Backlog*, *Sprint Backlog*, *En Desarrollo*, *Pruebas QA*, *Completado*).
+* **Gestión de Tiempos y Estimaciones:** Seguimiento de las 80 horas de cada Sprint, asignación de responsables y fechas de entrega estrictas cada 3 semanas.
+* **Prevención de Cuellos de Botella:** Aplicación de límites de trabajo en progreso (WIP - *Work In Progress*) para evitar acumulación de tareas a medio terminar.
+
+### 5.3. Productividad con GitHub
+* **Desarrollo Paralelo Seguro (GitFlow):** Trabajo aislado en ramas específicas (`feature/crud-roles-evaluacion`, `feature/pipeline-ia-opencv`) protegiendo la rama `main` contra roturas accidentales.
+* **Validación Automatizada (CI/CD con GitHub Actions):** Ejecución inmediata de las 38 pruebas de Laravel y 20 pruebas de FastAPI en la nube tras cada `push`, garantizando que ningún código defectuoso llegue a producción.
+* **Respaldo y Auditoría Transparente:** Historial inmutable de commits con autor, fecha, hora y descripción exacta de los cambios realizados.
+
+---
+
+## 6. Diagramas de Despliegue (UML 2.5)
+
+El Diagrama de Despliegue modela la topología física y lógica de los nodos de hardware, los artefactos de software ejecutables y los protocolos de comunicación que componen **GraphiLearn AI**:
+
+### 6.1. Diagrama de Despliegue: Entorno de Desarrollo Local
+Muestra la configuración en la estación de trabajo de la desarrolladora:
+
+```mermaid
+flowchart TD
+    subgraph DispositivoCliente["Dispositivo del Usuario / Desarrollador"]
+        Navegador["«device»<br/>Navegador Web (Chrome / Edge)<br/>Puerto local dinámico"]
+        ReactSPA["«artifact»<br/>Interfaz SPA React 19 + Vite<br/>http://localhost:5173 o :8000"]
+        Camara["«device»<br/>Cámara Web / Selector Móvil"]
+        Navegador --- ReactSPA
+        ReactSPA --- Camara
+    end
+
+    subgraph EstacionDesarrollo["Estación de Trabajo Local (Windows PC)"]
+        subgraph ServidorLaravel["«execution environment»<br/>PHP 8.2 CLI / Artisan Serve"]
+            LaravelAPI["«artifact»<br/>GraphiLearn Backend API v1<br/>http://127.0.0.1:8000"]
+            StorageLocal["«artifact»<br/>Disco Privado Local<br/>storage/app/private/"]
+        end
+
+        subgraph ServidorFastAPI["«execution environment»<br/>Python 3.14 / Uvicorn Server"]
+            FastAPIService["«artifact»<br/>ai-service (OpenCV + Zhang-Suen)<br/>http://127.0.0.1:8001"]
+        end
+
+        subgraph ServidorPostgres["«database system»<br/>PostgreSQL 17"]
+            BDLocal[("«database»<br/>graphilearn<br/>Puerto: 5432")]
+        end
+    end
+
+    ReactSPA -->|HTTP / JSON<br/>Bearer Sanctum Token| LaravelAPI
+    ReactSPA -->|HTTP Multipart<br/>Subida de fotografía| LaravelAPI
+    LaravelAPI -->|PDO PgSQL / SQL<br/>Puerto 5432| BDLocal
+    LaravelAPI -->|Lectura / Escritura UUID| StorageLocal
+    LaravelAPI -->|HTTP POST Multipart<br/>Header: X-Internal-Token<br/>http://127.0.0.1:8001/api/analyze| FastAPIService
+```
+
+---
+
+### 6.2. Diagrama de Despliegue: Entorno de Producción en la Nube
+Muestra la arquitectura escalable de alta disponibilidad para colegios en Santa Cruz:
+
+```mermaid
+flowchart TD
+    subgraph ClientesColegio["Unidad Educativa (Aulas de Kínder)"]
+        CelularDocente["«device»<br/>Smartphone / Tablet Android/iOS<br/>Cámara Integrada + Navegador"]
+        PCDireccion["«device»<br/>Ordenador de Dirección / Administración"]
+    end
+
+    subgraph InternetCloud["Nube Pública (Cloud VPS / Datacenter)"]
+        subgraph ProxyInverso["«node» Servidor Perimetral (Ingress / Nginx)"]
+            Nginx["«software»<br/>Nginx Web Server + Let's Encrypt SSL<br/>Puertos: 80 (HTTP) -> 443 (HTTPS)"]
+        end
+
+        subgraph RedPrivada["Red Virtual Privada (VPC Interna)"]
+            subgraph NodoBackend["«node» Servidor de Aplicación (Docker Container)"]
+                LaravelProd["«artifact»<br/>Laravel 12 + PHP-FPM 8.2<br/>API RESTful + Autenticación"]
+                StoragePrivado["«storage»<br/>Volumen Privado Cifrado<br/>(Fotografías de trazos infantiles)"]
+            end
+
+            subgraph NodoIA["«node» Servidor de IA (Docker Container)"]
+                FastAPIProd["«artifact»<br/>FastAPI + Uvicorn Worker<br/>OpenCV 5 + NumPy (Pipeline Geométrico)"]
+            end
+
+            subgraph NodoBD["«node» Servidor de Base de Datos"]
+                PostgresProd[("«database»<br/>PostgreSQL 17 Administrado<br/>Backups Automáticos Diarios")]
+            end
+        end
+    end
+
+    CelularDocente -->|HTTPS / TLS 1.3<br/>https://app.graphilearn.bo| Nginx
+    PCDireccion -->|HTTPS / TLS 1.3<br/>https://app.graphilearn.bo| Nginx
+
+    Nginx -->|Proxy Pass Interno| LaravelProd
+    LaravelProd -->|Persistencia Transaccional| PostgresProd
+    LaravelProd -->|Almacenamiento Criptográfico UUID| StoragePrivado
+    LaravelProd -->|HTTP Interno Privado<br/>Header: X-Internal-Token (VPC)| FastAPIProd
+```
+
+---
+
+## 7. Conclusión
+
+La combinación de **Enterprise Architect** para el modelado riguroso, **Trello** para la gestión visual del tiempo y **GitHub** para el control de versiones y CI/CD garantiza la máxima productividad de ingeniería de software. Asimismo, los **Diagramas de Despliegue** sustentan tanto la viabilidad de la demostración local en la defensa de grado como la puesta en marcha escalable en producción en la nube.
 
 Enterprise Architect potencia la productividad técnica mediante la automatización de tareas repetitivas:
 

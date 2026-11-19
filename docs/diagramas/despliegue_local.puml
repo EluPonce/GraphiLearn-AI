@@ -1,0 +1,32 @@
+@startuml
+title Diagrama de Despliegue - Entorno Local de Desarrollo (GraphiLearn AI)
+
+node "Dispositivo de Usuario" as ClientDevice <<device>> {
+    node "Navegador Web (Chrome/Edge)" as Browser <<execution environment>> {
+        artifact "React 19 + Vite SPA\nhttp://localhost:8000" as ReactApp <<artifact>>
+    }
+    node "Cámara Web / Móvil" as Camera <<device>>
+    ReactApp ..> Camera : captura
+}
+
+node "Estación de Trabajo (Windows PC)" as DevStation <<device>> {
+    node "Servidor Laravel (PHP 8.2 CLI)" as LaravelNode <<execution environment>> {
+        artifact "GraphiLearn API REST v1\n(Laravel 12 / Sanctum)" as LaravelApp <<artifact>>
+        folder "storage/app/private/\n(Fotos UUID)" as LocalStorage <<filesystem>>
+    }
+
+    node "Servidor FastAPI (Python 3.14)" as FastAPINode <<execution environment>> {
+        artifact "ai-service (Uvicorn :8001)\n(OpenCV + Zhang-Suen)" as FastAPIService <<artifact>>
+    }
+
+    database "PostgreSQL 17 DBMS\n(Puerto :5432)" as PostgresNode <<database system>> {
+        database "graphilearn" as DB <<database>>
+    }
+}
+
+ReactApp -- LaravelApp : HTTP JSON / Multipart\n[Bearer Sanctum]
+LaravelApp -- DB : PDO PgSQL (TCP :5432)
+LaravelApp -- LocalStorage : I/O Archivos Privados
+LaravelApp -- FastAPIService : HTTP Multipart (:8001/api/analyze)\n[Header: X-Internal-Token]
+
+@enduml

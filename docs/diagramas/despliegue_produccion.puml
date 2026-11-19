@@ -1,0 +1,47 @@
+@startuml
+title Diagrama de Despliegue - Entorno de Producción en la Nube (GraphiLearn AI)
+
+node "Dispositivo Docente" as TeacherPhone <<device>> {
+    node "Navegador Móvil" as MobileBrowser <<execution environment>> {
+        artifact "Cliente Web Responsive" as MobileSPA <<artifact>>
+    }
+    node "Cámara Trasera" as BackCamera <<device>>
+    MobileSPA ..> BackCamera : captura
+}
+
+node "Dispositivo Dirección" as AdminPC <<device>> {
+    node "Navegador de Escritorio" as PCBrowser <<execution environment>> {
+        artifact "Panel de Gestión" as PCSPA <<artifact>>
+    }
+}
+
+cloud "Nube Pública (Cloud VPS / Datacenter)" as CloudNetwork {
+    node "Servidor Proxy Perimetral" as IngressNode <<node>> {
+        artifact "Nginx Web Server\n(Let's Encrypt SSL :443)" as NginxProxy <<software>>
+    }
+
+    frame "Red Virtual Privada (VPC)" as InternalVPC {
+        node "Contenedor Docker: Backend" as BackendContainer <<node>> {
+            artifact "Laravel 12 (PHP-FPM 8.2)\nGraphiLearn Core API" as LaravelProd <<artifact>>
+            folder "Volumen Privado Cifrado\n(Fotografías de trazos)" as EncryptedStorage <<storage>>
+        }
+
+        node "Contenedor Docker: IA" as AIContainer <<node>> {
+            artifact "FastAPI (Python 3.14)\nOpenCV 5 + Zhang-Suen" as FastAPIProd <<artifact>>
+        }
+
+        database "Servidor de Base de Datos" as DBNode <<node>> {
+            database "PostgreSQL 17 Administrado\n(BBDD graphilearn)" as PostgresProd <<database>>
+        }
+    }
+}
+
+MobileSPA --> NginxProxy : HTTPS / TLS 1.3\n(https://app.graphilearn.bo)
+PCSPA --> NginxProxy : HTTPS / TLS 1.3\n(https://app.graphilearn.bo)
+
+NginxProxy --> LaravelProd : Proxy Pass Interno
+LaravelProd --> PostgresProd : Conexión SQL Segura
+LaravelProd --> EncryptedStorage : Guardado Cifrado UUID
+LaravelProd --> FastAPIProd : HTTP Interno Privado\n[X-Internal-Token :8001]
+
+@enduml
