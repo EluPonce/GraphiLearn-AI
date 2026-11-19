@@ -23,9 +23,8 @@ class QuantitativeIndicatorsSchema(BaseModel):
     regularidad: float = Field(..., description="Índice de uniformidad geométrica [0.0 - 1.0] (1.0 = máxima regularidad)")
 
 class ClassificationResultSchema(BaseModel):
-    disponible: bool = Field(False, description="Indica si existe un modelo de clasificación validado y cargado")
-    risk_label: Optional[str] = Field("no_disponible", description="Etiqueta orientativa de riesgo: 'bajo_riesgo', 'riesgo_potencial' o 'no_disponible'")
-    risk_score: Optional[float] = Field(None, description="Probabilidad o score calibrado [0.0 - 1.0], None si no está disponible")
+    disponible: bool = Field(False, description="Indica si existe un modelo experimental cargado")
+    sugerencia: Optional[str] = Field(None, description="Sugerencia experimental: S, ED, NA o null si no está disponible")
     model_version: Optional[str] = Field(None, description="Identificador de la versión del modelo utilizada")
     mensaje: str = Field(..., description="Explicación controlada del estado del clasificador")
 

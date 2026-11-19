@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\StudentController;
+use App\Http\Controllers\Api\V1\StudentProgressController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'role:docente,administrador'])->group(function () {
-    Route::apiResource('students', StudentController::class);
+Route::middleware(['auth:sanctum', 'role:docente,direccion'])->group(function () {
+    Route::get('students', [StudentController::class, 'index']);
+    Route::get('students/{student}', [StudentController::class, 'show']);
 });

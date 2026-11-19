@@ -20,6 +20,7 @@ class StoreActividadRequest extends FormRequest
             'id_estudiante' => ['required', 'integer', 'exists:students,id'],
             'id_ejercicio'  => ['required', 'integer', 'exists:exercises,id'],
             'fecha'         => ['required', 'date', 'before_or_equal:today'],
+            'scheduled_activity_id' => ['nullable', 'integer', 'exists:scheduled_activities,id'],
         ];
     }
 

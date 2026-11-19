@@ -21,6 +21,7 @@ class UpdateExerciseRequest extends FormRequest
             'nombre'      => ['sometimes', 'required', 'string', 'max:255'],
             'tipo_trazo'  => ['sometimes', 'required', Rule::in(['linea', 'circulo', 'espiral', 'zigzag'])],
             'descripcion' => ['nullable', 'string', 'max:1000'],
+            'activo'      => ['sometimes', 'boolean'],
         ];
     }
 

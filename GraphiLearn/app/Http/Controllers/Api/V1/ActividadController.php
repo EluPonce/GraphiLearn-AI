@@ -7,7 +7,9 @@ use App\Http\Requests\Actividad\StoreActividadRequest;
 use App\Http\Resources\ActividadResource;
 use App\Models\Actividad;
 use App\Models\Student;
+use App\Models\ScheduledActivity;
 use App\Services\ActividadService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -74,12 +76,38 @@ class ActividadController extends Controller
             ], 403);
         }
 
-        $actividad = Actividad::create([
-            'id_estudiante' => $request->validated('id_estudiante'),
-            'id_ejercicio'  => $request->validated('id_ejercicio'),
-            'fecha'         => $request->validated('fecha'),
-            'estado'        => 'pendiente',
-        ]);
+        $scheduledId = $request->validated('scheduled_activity_id');
+        if ($scheduledId) {
+            $scheduled = ScheduledActivity::with('exercises')->findOrFail($scheduledId);
+            if (! $scheduled->active || (int) $scheduled->course_id !== (int) $student->id_curso
+                || ! $scheduled->exercises->contains('id', (int) $request->validated('id_ejercicio'))) {
+                return response()->json(['message' => 'La actividad programada no corresponde al curso y ejercicio seleccionados.'], 422);
+            }
+
+            $alreadyRecorded = Actividad::withTrashed()
+                ->where('scheduled_activity_id', $scheduled->id)
+                ->where('id_estudiante', $student->id)
+                ->where('id_ejercicio', $request->validated('id_ejercicio'))
+                ->exists();
+            if ($alreadyRecorded) {
+                return response()->json(['message' => 'Este ejercicio ya fue registrado para el estudiante en esta programación.'], 409);
+            }
+        }
+
+        try {
+            $actividad = Actividad::create([
+                'id_estudiante' => $request->validated('id_estudiante'),
+                'id_ejercicio'  => $request->validated('id_ejercicio'),
+                'scheduled_activity_id' => $scheduledId,
+                'fecha'         => $request->validated('fecha'),
+                'estado'        => 'pendiente',
+            ]);
+        } catch (QueryException $exception) {
+            if ($scheduledId && ($exception->errorInfo[0] ?? null) === '23505') {
+                return response()->json(['message' => 'Este ejercicio ya fue registrado para el estudiante en esta programación.'], 409);
+            }
+            throw $exception;
+        }
 
         $actividad->load(['estudiante.curso', 'ejercicio']);
 
@@ -96,7 +124,7 @@ class ActividadController extends Controller
      */
     public function show(Actividad $actividad): JsonResponse
     {
-        $actividad->load(['estudiante.curso', 'ejercicio', 'imagen', 'analysisResult']);
+        $actividad->load(['estudiante.curso', 'ejercicio', 'scheduledActivity.exercises', 'imagen', 'analysisResult', 'evaluationHistory.changedBy']);
         Gate::authorize('view', $actividad);
 
         return response()->json([

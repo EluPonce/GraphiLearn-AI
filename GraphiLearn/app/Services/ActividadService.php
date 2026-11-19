@@ -15,7 +15,7 @@ class ActividadService
             ->whereIn('id_curso', $user->cursosAccesibles()->select('id'))
             ->select('id');
 
-        return Actividad::with(['estudiante.curso', 'ejercicio', 'imagen'])
+        return Actividad::with(['estudiante.curso', 'ejercicio', 'imagen', 'evaluationHistory.changedBy'])
             ->whereIn('id_estudiante', $studentIds);
     }
 

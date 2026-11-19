@@ -3,6 +3,8 @@ import math
 import os
 import sys
 
+os.environ["GRAPHILEARN_INTERNAL_TOKEN"] = "test-internal-token"
+
 # Asegurar que ai-service esté en el path de módulos
 ai_service_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ai_service_dir not in sys.path:
@@ -38,7 +40,7 @@ from services.indicators import (
 )
 from services.classifier import classifier_instance
 
-client = TestClient(app)
+client = TestClient(app, headers={"X-Internal-Token": "test-internal-token"})
 
 # ---------------------------------------------------------------------------
 # Helpers para generar imágenes sintéticas controladas
@@ -204,17 +206,13 @@ def test_roughness_and_regularity_behavior():
 # Test suite: Inferencia de Clasificador y Contrato JSON (HU-10)
 # ---------------------------------------------------------------------------
 
-def test_classifier_returns_safe_not_available_when_no_model():
-    """
-    En ausencia de modelo validado cargado, debe retornar estado explícito 'no_disponible'
-    sin asignar arbitrariamente 'bajo riesgo'.
-    """
+def test_classifier_returns_null_suggestion_when_no_model():
+    """Sin modelo se mantiene el análisis y no se inventa una sugerencia."""
     classifier_instance.model = None
     res = classifier_instance.predict({}, {})
 
     assert res["disponible"] is False
-    assert res["risk_label"] == "no_disponible"
-    assert res["risk_score"] is None
+    assert res["sugerencia"] is None
     assert "no disponible" in res["mensaje"].lower()
 
 def test_api_endpoint_analyze_contract():
@@ -247,5 +245,131 @@ def test_api_endpoint_analyze_contract():
 
     # Verificar estado de clasificación no disponible
     cl = json_data["clasificacion"]
-    assert cl["risk_label"] == "no_disponible"
-    assert cl["risk_score"] is None
+    assert cl["sugerencia"] is None
+
+def test_all_endpoints_reject_missing_internal_token():
+    response = TestClient(app).get("/api/models/status")
+    assert response.status_code == 401
+
+def test_root_requires_internal_token_and_does_not_advertise_legacy_routes():
+    assert TestClient(app).get("/").status_code == 401
+    response = client.get("/")
+    assert response.status_code == 200
+    body = response.json()
+    assert "endpoints" not in body
+    assert "sprint" not in body
+    assert "/predict" not in str(body)
+    assert "/api/models/load" not in str(body)
+
+def test_model_load_rejects_identifier_outside_allowlist():
+    response = client.post("/api/models/load", json={"model_id": "not-registered"})
+    assert response.status_code == 404
+
+def test_model_load_rejects_client_supplied_file_path():
+    response = client.post("/api/models/load", json={"file_path": "models/anything.joblib"})
+    assert response.status_code == 422
+
+def test_model_load_requires_allowlisted_id_and_matching_hash(tmp_path, monkeypatch):
+    import hashlib
+    import json
+    import routers.models as model_router
+
+    artifact = tmp_path / "trusted.joblib"
+    artifact.write_bytes(b"trusted test artifact")
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"models": {
+        "rf-test": {"filename": artifact.name, "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest()}
+    }}), encoding="utf-8")
+    monkeypatch.setattr(model_router, "MODELS_DIR", tmp_path)
+    monkeypatch.setattr(model_router, "MANIFEST_PATH", manifest)
+    monkeypatch.setattr(classifier_instance, "model", None)
+    monkeypatch.setattr(classifier_instance, "model_id", None)
+    monkeypatch.setattr(classifier_instance, "version_name", None)
+    monkeypatch.setattr(classifier_instance, "model_path", None)
+    monkeypatch.setattr(classifier_instance, "metadata", {})
+    monkeypatch.setattr(classifier_instance, "model", None)
+    monkeypatch.setattr(classifier_instance, "model_id", None)
+    monkeypatch.setattr(classifier_instance, "version_name", None)
+    monkeypatch.setattr(classifier_instance, "model_path", None)
+    monkeypatch.setattr(classifier_instance, "metadata", {})
+    monkeypatch.setattr(classifier_instance, "model", None)
+    monkeypatch.setattr(classifier_instance, "model_id", None)
+    monkeypatch.setattr(classifier_instance, "version_name", None)
+    monkeypatch.setattr(classifier_instance, "model_path", None)
+    monkeypatch.setattr(classifier_instance, "metadata", {})
+
+    def fake_load(path, model_id=None):
+        classifier_instance.model = object()
+        classifier_instance.model_id = model_id
+        classifier_instance.version_name = model_id
+        classifier_instance.model_path = path
+        classifier_instance.metadata = {}
+
+    monkeypatch.setattr(classifier_instance, "load_model", fake_load)
+    response = client.post("/api/models/load", json={"model_id": "rf-test"})
+    assert response.status_code == 200
+    assert response.json()["loaded"] is True
+    assert response.json()["model_id"] == "rf-test"
+
+    artifact.write_bytes(b"tampered test artifact")
+    mismatch = client.post("/api/models/load", json={"model_id": "rf-test"})
+    assert mismatch.status_code == 409
+
+
+# ---------------------------------------------------------------------------
+# Cobertura de los 4 tipos de trazo (HU-08, HU-09) y aviso pedagógico (HU-10)
+# ---------------------------------------------------------------------------
+
+def _encode(img):
+    _, buf = cv2.imencode(".png", img)
+    return buf.tobytes()
+
+
+def create_synthetic_zigzag(img_size=(300, 300)):
+    img = np.ones((img_size[1], img_size[0], 3), dtype=np.uint8) * 255
+    pts = np.array([[30 + i * 40, 110 if i % 2 == 0 else 190] for i in range(7)], dtype=np.int32)
+    cv2.polylines(img, [pts], isClosed=False, color=(30, 30, 30), thickness=3)
+    return _encode(img)
+
+
+def create_synthetic_spiral(img_size=(300, 300), center=(150, 150)):
+    img = np.ones((img_size[1], img_size[0], 3), dtype=np.uint8) * 255
+    pts = []
+    for k in range(0, 720, 6):
+        t = math.radians(k)
+        r = 15 + 9 * t
+        pts.append([int(center[0] + r * math.cos(t)), int(center[1] + r * math.sin(t))])
+    cv2.polylines(img, [np.array(pts, dtype=np.int32)], isClosed=False, color=(30, 30, 30), thickness=3)
+    return _encode(img)
+
+
+@pytest.mark.parametrize("tipo,builder", [
+    ("linea", lambda: create_synthetic_image_with_line()),
+    ("circulo", lambda: create_synthetic_image_with_circle()),
+    ("zigzag", create_synthetic_zigzag),
+    ("espiral", create_synthetic_spiral),
+])
+def test_analyze_returns_finite_features_indicators_and_notice_for_each_stroke_type(tipo, builder):
+    response = client.post(
+        "/api/analyze",
+        files={"file": (f"{tipo}.png", io.BytesIO(builder()), "image/png")},
+        data={"tipo_esperado": tipo},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["tipo_trazo"] == tipo
+
+    geom = body["caracteristicas_geometricas"]
+    for field in ["longitud_trazo", "alto", "ancho", "proporcion", "inclinacion", "curvatura", "separacion_componentes"]:
+        assert math.isfinite(geom[field]), f"{tipo}: {field} no es finito"
+    pos = geom["posicion_normalizada"]
+    assert 0.0 <= pos["center_x"] <= 1.0 and 0.0 <= pos["center_y"] <= 1.0
+
+    ind = body["indicadores_cuantitativos"]
+    for field in ["desviacion", "rugosidad", "continuidad", "regularidad"]:
+        assert math.isfinite(ind[field]), f"{tipo}: {field} no es finito"
+    assert 0.0 <= ind["continuidad"] <= 1.0
+    assert 0.0 <= ind["regularidad"] <= 1.0
+
+    assert body["clasificacion"]["sugerencia"] in (None, "S", "ED", "NA")
+    assert body["detalles_computacionales"]["aviso_pedagogico"]

@@ -43,7 +43,7 @@ class GraphiLearnInitialBackendTest extends TestCase
     /**
      * Verificar registro de docente.
      */
-    public function test_teacher_can_register_and_receives_token(): void
+    public function test_public_teacher_registration_is_disabled(): void
     {
         $response = $this->postJson('/api/v1/auth/register', [
             'nombre' => 'Docente Nuevo',
@@ -53,23 +53,8 @@ class GraphiLearnInitialBackendTest extends TestCase
             'rol' => 'docente',
         ]);
 
-        $response->assertStatus(201)
-            ->assertJsonStructure([
-                'message',
-                'access_token',
-                'token_type',
-                'user' => ['id', 'nombre', 'correo', 'rol', 'created_at'],
-            ])
-            ->assertJson([
-                'user' => [
-                    'correo' => 'docente.nuevo@graphilearn.test',
-                    'rol' => 'docente',
-                ],
-            ]);
-
-        $this->assertDatabaseHas('users', [
-            'correo' => 'docente.nuevo@graphilearn.test',
-        ]);
+        $response->assertForbidden();
+        $this->assertDatabaseMissing('users', ['correo' => 'docente.nuevo@graphilearn.test']);
     }
 
     /**
@@ -157,10 +142,8 @@ class GraphiLearnInitialBackendTest extends TestCase
             ->assertJsonCount(4, 'data');
     }
 
-    /**
-     * Verificar que el administrador puede ver todos los estudiantes (6 estudiantes).
-     */
-    public function test_admin_can_access_students_list(): void
+    /** Administración de modelos no implica acceso a datos de estudiantes. */
+    public function test_admin_cannot_access_students_list(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -170,24 +153,20 @@ class GraphiLearnInitialBackendTest extends TestCase
         $response = $this->withToken($token)
             ->getJson('/api/v1/students');
 
-        $response->assertStatus(200)
-            ->assertJsonCount(6, 'data');
+        $response->assertForbidden();
     }
 
     /**
-     * Verificar que el administrador ve todos los cursos (3 cursos).
+     * El administrador conserva su alcance exclusivo para versiones del modelo.
      */
-    public function test_admin_can_access_all_courses(): void
+    public function test_admin_cannot_access_courses(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $admin = User::where('rol', 'administrador')->first();
         $adminToken = $admin->createToken('admin')->plainTextToken;
 
-        $this->withToken($adminToken)
-            ->getJson('/api/v1/cursos')
-            ->assertStatus(200)
-            ->assertJsonCount(3, 'data');
+        $this->withToken($adminToken)->getJson('/api/v1/cursos')->assertForbidden();
     }
 
     /**

@@ -17,9 +17,14 @@ class Actividad extends Model
     protected $fillable = [
         'id_estudiante',
         'id_ejercicio',
+        'scheduled_activity_id',
         'fecha',
         'estado',
         'fecha_procesado',
+        'evaluated_by',
+        'pedagogical_rating',
+        'pedagogical_observations',
+        'period_reference',
     ];
 
     protected function casts(): array
@@ -67,6 +72,21 @@ class Actividad extends Model
     public function analysisResult(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
         return $this->hasOne(\App\Models\AnalysisResult::class, 'actividad_id');
+    }
+
+    public function scheduledActivity(): BelongsTo
+    {
+        return $this->belongsTo(ScheduledActivity::class, 'scheduled_activity_id');
+    }
+
+    public function evaluatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'evaluated_by');
+    }
+
+    public function evaluationHistory(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ActivityEvaluationHistory::class, 'actividad_id');
     }
 
 }

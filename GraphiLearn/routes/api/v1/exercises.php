@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth:sanctum', 'role:docente,administrador'])->group(function () {
-    Route::apiResource('exercises', ExerciseController::class);
+Route::middleware(['auth:sanctum', 'role:docente,direccion'])->group(function () {
+    Route::get('exercises', [ExerciseController::class, 'index']);
+    Route::get('exercises/{exercise}', [ExerciseController::class, 'show']);
 });

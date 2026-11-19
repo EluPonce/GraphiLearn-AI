@@ -1,0 +1,17 @@
+services:
+  ai-service:
+    build:
+      context: ./ai-service
+    environment:
+      GRAPHILEARN_INTERNAL_TOKEN: ${GRAPHILEARN_INTERNAL_TOKEN:?Set GRAPHILEARN_INTERNAL_TOKEN in the deployment environment}
+    expose:
+      - "8001"
+    volumes:
+      - ./ai-service/models:/app/models:ro
+    networks:
+      - graphilearn-internal
+    restart: unless-stopped
+
+networks:
+  graphilearn-internal:
+    internal: true

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { Activity, Plus, Search, Eye, Filter } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Activity, Search, Eye, Filter } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge';
+import { formatLocalDate } from '../utils/dateFormat';
 
 export default function ActivitiesView({
   activities,
@@ -9,14 +11,25 @@ export default function ActivitiesView({
 }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [programs, setPrograms] = useState([]);
+  const [programsLoading, setProgramsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    axios.get('/api/v1/actividades-programadas')
+      .then(response => { if (!cancelled) setPrograms((response.data.data || []).filter(program => program.active)); })
+      .catch(() => { if (!cancelled) setPrograms([]); })
+      .finally(() => { if (!cancelled) setProgramsLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredActivities = activities.filter((act) => {
-    const matchesSearch = act.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      act.exerciseName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (act.studentName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (act.exerciseName || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' ||
       (filterStatus === 'pendiente' && act.status.toLowerCase().includes('pendiente')) ||
       (filterStatus === 'cargada' && act.status.toLowerCase().includes('cargada')) ||
-      (filterStatus === 'procesada' && act.status.toLowerCase().includes('procesad'));
+      (filterStatus === 'procesada' && ((act.status || '').toLowerCase().includes('completado') || act.estado === 'procesado'));
     return matchesSearch && matchesFilter;
   });
 
@@ -34,19 +47,17 @@ export default function ActivitiesView({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 tracking-tight">Actividades Grafomotoras</h2>
+          <h2 className="text-xl font-bold text-slate-800 tracking-tight">Trabajos de los estudiantes</h2>
           <p className="text-xs text-slate-600 mt-0.5">
-            Registro de sesiones de práctica en papel, captura de fotografías y cálculo de métricas
+            Fotografía, análisis automático y valoración docente de cada ejercicio realizado
           </p>
         </div>
-        <button
-          onClick={() => setCurrentView('new-activity')}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-100 transition-all active:scale-[0.98]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>+ Nueva actividad</span>
-        </button>
       </div>
+
+      <section className="space-y-3 rounded-3xl border border-indigo-100 bg-white p-4 shadow-xs sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-bold text-slate-900">Actividades programadas para tus cursos</h3><p className="text-xs text-slate-600">Selecciona estudiante y ejercicio al registrar cada trabajo.</p></div><button type="button" onClick={() => setCurrentView('new-activity')} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white">Registrar un trabajo</button></div>
+        {programsLoading ? <p role="status" className="text-sm text-slate-500">Cargando programaciones…</p> : programs.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{programs.map(program => <article key={program.id} className="rounded-2xl border bg-slate-50 p-4"><h4 className="font-semibold text-slate-900">{program.name}</h4><p className="mt-1 text-xs text-slate-600">{program.course?.nombre || 'Curso asignado'}{program.scheduled_for ? ` · ${formatLocalDate(program.scheduled_for)}` : ''}</p><ul className="mt-3 flex flex-wrap gap-1.5">{(program.exercises || (program.exercise ? [program.exercise] : [])).map((exercise, index) => <li key={exercise.id} className="rounded-full border bg-white px-2.5 py-1 text-xs text-slate-700">{index + 1}. {exercise.nombre}</li>)}</ul></article>)}</div> : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No hay actividades programadas activas para tus cursos.</p>}
+      </section>
 
       {/* Filter and Search */}
       <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
@@ -69,9 +80,9 @@ export default function ActivitiesView({
             className="bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-indigo-500 transition-all font-medium"
           >
             <option value="all">Todos los estados</option>
-            <option value="pendiente">Pendiente de imagen</option>
-            <option value="cargada">Imagen cargada</option>
-            <option value="procesada">Procesada</option>
+            <option value="pendiente">Pendiente de fotografía</option>
+            <option value="cargada">Fotografía guardada</option>
+            <option value="procesada">Análisis completado</option>
           </select>
         </div>
       </div>
@@ -85,7 +96,7 @@ export default function ActivitiesView({
                 <th className="py-3.5 px-6 font-bold">Estudiante</th>
                 <th className="py-3.5 px-6 font-bold">Ejercicio</th>
                 <th className="py-3.5 px-6 font-bold">Fecha</th>
-                <th className="py-3.5 px-6 font-bold">Estado</th>
+                <th className="py-3.5 px-6 font-bold">Estado del trabajo</th>
                 <th className="py-3.5 px-6 font-bold text-right">Acción</th>
               </tr>
             </thead>
@@ -93,7 +104,7 @@ export default function ActivitiesView({
               {filteredActivities.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-600 font-medium">
-                    No se encontraron actividades con los filtros actuales.
+                    No se encontraron trabajos con los filtros actuales.
                   </td>
                 </tr>
               ) : (
@@ -106,7 +117,7 @@ export default function ActivitiesView({
                         </div>
                         <div>
                           <p className="font-bold text-slate-800">{activity.studentName}</p>
-                          <p className="text-xs text-slate-600 font-mono">Actividad #{activity.id.toString().slice(-4)}</p>
+                        <p className="text-xs text-slate-600">Registro #{activity.id.toString().slice(-4)}</p>
                         </div>
                       </div>
                     </td>
@@ -117,7 +128,7 @@ export default function ActivitiesView({
                       </div>
                     </td>
                     <td className="py-4 px-6 text-slate-600 font-mono text-xs">
-                      {activity.date}
+                      {formatLocalDate(activity.date)}
                     </td>
                     <td className="py-4 px-6">
                       <StatusBadge status={activity.status} />

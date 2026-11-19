@@ -17,6 +17,7 @@ class StudentResource extends JsonResource
             'nombre'           => $this->nombre,
             'fecha_nacimiento' => $this->fecha_nacimiento?->format('Y-m-d'),
             'id_curso'         => $this->id_curso,
+            'administrative_status' => $this->deleted_at ? 'Inactivo' : 'Activo',
             'curso'            => $this->whenLoaded('curso', fn () => [
                 'id'     => $this->curso->id,
                 'nombre' => $this->curso->nombre,

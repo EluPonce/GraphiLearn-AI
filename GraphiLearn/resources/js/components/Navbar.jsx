@@ -1,18 +1,19 @@
 import React from 'react';
-import { ChevronRight, ShieldCheck, Sparkles, School } from 'lucide-react';
+import { ChevronRight, ShieldCheck } from 'lucide-react';
 
 export default function Navbar({ currentView, selectedActivity }) {
   const titles = {
-    dashboard: 'Panel General',
-    courses: 'Gestión de Cursos y Aulas',
+    dashboard: 'Panel principal',
+    courses: 'Cursos y aulas',
     students: 'Gestión de Estudiantes',
     exercises: 'Catálogo de Ejercicios Grafomotores',
-    activities: 'Registro de Actividades',
-    'new-activity': 'Nueva Actividad Grafomotora',
-    'activity-detail': selectedActivity ? `Detalle de Actividad #${selectedActivity.id}` : 'Detalle de Actividad',
-    analysis: 'Centro de Análisis Computacional',
-    'analysis-detail': 'Análisis de Características del Trazo',
-    profile: 'Perfil del Usuario y Especificaciones del Sistema'
+    activities: 'Trabajos y evaluaciones',
+    'new-activity': 'Registrar trabajo',
+    'activity-detail': selectedActivity ? `Trabajo #${selectedActivity.id}` : 'Detalle del trabajo',
+    analysis: 'Informes de seguimiento',
+    reports: 'Informes de seguimiento',
+    'analysis-detail': 'Análisis del ejercicio',
+    profile: 'Perfil'
   };
 
   return (
@@ -35,7 +36,7 @@ export default function Navbar({ currentView, selectedActivity }) {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span className="text-emerald-800 font-medium text-[11px]">Pipeline IA Activo</span>
+          <span className="text-emerald-800 font-medium text-[11px]">Acceso por rol</span>
         </div>
 
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-600 text-xs font-medium">

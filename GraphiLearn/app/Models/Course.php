@@ -19,7 +19,13 @@ class Course extends Model
         'nombre',
         'nivel',
         'gestion',
+        'active',
     ];
+
+    protected function casts(): array
+    {
+        return ['active' => 'boolean'];
+    }
 
     /**
      * Institución a la que pertenece el curso.
@@ -43,5 +49,15 @@ class Course extends Model
     public function estudiantes(): HasMany
     {
         return $this->hasMany(Student::class, 'id_curso');
+    }
+
+    public function scheduledActivities(): HasMany
+    {
+        return $this->hasMany(ScheduledActivity::class, 'course_id');
+    }
+
+    public function evaluaciones(): HasMany
+    {
+        return $this->hasMany(Evaluacion::class, 'id_curso');
     }
 }

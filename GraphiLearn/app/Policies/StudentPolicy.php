@@ -9,7 +9,7 @@ class StudentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->esDocente() || $user->esAdministrador();
+        return $user->esDocente() || $user->esDireccion();
     }
 
     public function view(User $user, Student $student): bool
@@ -19,16 +19,21 @@ class StudentPolicy
 
     public function create(User $user): bool
     {
-        return $user->esDocente();
+        return false;
     }
 
     public function update(User $user, Student $student): bool
     {
-        return $user->esDocente() && $this->view($user, $student);
+        return false;
     }
 
     public function delete(User $user, Student $student): bool
     {
-        return $user->esDocente() && $this->view($user, $student);
+        return false;
+    }
+
+    public function restore(User $user, Student $student): bool
+    {
+        return false;
     }
 }

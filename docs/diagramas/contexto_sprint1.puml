@@ -1,0 +1,23 @@
+@startuml Contexto_Sprint1
+!pragma layout smetana
+left to right direction
+actor Usuario
+actor Docente
+Docente -|> Usuario
+
+rectangle "GraphiLearn AI" {
+  usecase "HU-01: Iniciar sesión" as HU01
+  usecase "HU-02: Gestionar estudiantes" as HU02
+  usecase "HU-03: Gestionar ejercicios" as HU03
+  usecase "HU-04: Registrar actividad" as HU04
+  usecase "HU-05: Cargar imagen" as HU05
+  usecase "HU-06: Validar imagen" as HU06
+}
+
+Usuario -- HU01
+Docente -- HU02
+Docente -- HU03
+Docente -- HU04
+Docente -- HU05
+HU05 ..> HU06 : <<include>>
+@enduml

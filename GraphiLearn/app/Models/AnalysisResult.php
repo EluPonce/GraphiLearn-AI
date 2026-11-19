@@ -29,8 +29,7 @@ class AnalysisResult extends Model
         'rugosidad',
         'continuidad',
         'regularidad',
-        'risk_label',
-        'risk_score',
+        'sugerencia',
         'model_version_id',
         'estado',
         'estado_revision',
@@ -54,7 +53,6 @@ class AnalysisResult extends Model
             'rugosidad'                => 'float',
             'continuidad'              => 'float',
             'regularidad'              => 'float',
-            'risk_score'               => 'float',
         ];
     }
 

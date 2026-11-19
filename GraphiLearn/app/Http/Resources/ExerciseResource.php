@@ -17,6 +17,7 @@ class ExerciseResource extends JsonResource
             'nombre'      => $this->nombre,
             'tipo_trazo'  => $this->tipo_trazo,
             'descripcion' => $this->descripcion,
+            'activo'      => $this->activo,
             'created_at'  => $this->created_at?->toIso8601String(),
         ];
     }

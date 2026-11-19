@@ -40,6 +40,16 @@ class Student extends Model
      */
     public function actividades(): HasMany
     {
-        return $this->hasMany(Actividad::class, 'id_estudiante');
+        return $this->hasMany(FotoEjercicio::class, 'id_estudiante');
+    }
+
+    public function fotosEjercicio(): HasMany
+    {
+        return $this->hasMany(FotoEjercicio::class, 'id_estudiante');
+    }
+
+    public function observaciones(): HasMany
+    {
+        return $this->hasMany(Observacion::class, 'id_estudiante');
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Actividad;
 use App\Models\Imagen;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -43,6 +44,11 @@ class ImageUploadService
         $uuid          = Str::uuid()->toString();
         $nombreArchivo = "{$uuid}.{$extension}";
 
+        $existingImage = Imagen::where('id_actividad', $actividad->id)->first();
+        if ($existingImage && ($actividad->estado === 'procesado' || $actividad->analysisResult()->exists())) {
+            throw new \InvalidArgumentException('La fotografía de una evaluación ya analizada no se puede reemplazar.');
+        }
+
         // 3. Almacenar en storage privado
         $ruta = $file->storeAs(
             'graphilearn/imagenes',
@@ -54,13 +60,29 @@ class ImageUploadService
             throw new \RuntimeException('No se pudo almacenar el archivo en el sistema de archivos.');
         }
 
-        // 4. Registrar en la base de datos
-        $imagen = Imagen::create([
-            'id_actividad' => $actividad->id,
-            'ruta'         => $ruta,
-            'formato'      => $extension,
-            'fecha_carga'  => now(),
-        ]);
+        // Reemplazar el registro existente cuando la docente aún no ha solicitado el análisis.
+        if ($existingImage) {
+            $oldPath = $existingImage->ruta;
+            try {
+                DB::transaction(fn () => $existingImage->update([
+                    'ruta' => $ruta,
+                    'formato' => $extension,
+                    'fecha_carga' => now(),
+                ]));
+            } catch (\Throwable $exception) {
+                Storage::disk('private')->delete($ruta);
+                throw $exception;
+            }
+            Storage::disk('private')->delete($oldPath);
+            $imagen = $existingImage->fresh();
+        } else {
+            $imagen = Imagen::create([
+                'id_actividad' => $actividad->id,
+                'ruta'         => $ruta,
+                'formato'      => $extension,
+                'fecha_carga'  => now(),
+            ]);
+        }
 
         // ---------------------------------------------------------------
         // Sprint 2: Aquí se invocará FastAPIClient para procesar la imagen

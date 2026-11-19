@@ -1,13 +1,25 @@
 import os
 import sys
+import hmac
 
 # Asegurar que el directorio de ai-service esté en el PYTHONPATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
-from fastapi import FastAPI, File, UploadFile
+# Cargar variables de entorno desde archivo .env local si existe
+_env_file = os.path.join(current_dir, ".env")
+if os.path.isfile(_env_file):
+    with open(_env_file, "r", encoding="utf-8") as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from routers.analysis import router as analysis_router
 from routers.models import router as models_router
@@ -27,6 +39,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def require_internal_token(request, call_next):
+    """Require the shared service token on every HTTP endpoint, including docs."""
+    expected = os.getenv("GRAPHILEARN_INTERNAL_TOKEN", "")
+    if not expected:
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "El servicio interno no está configurado."},
+        )
+
+    supplied = request.headers.get("X-Internal-Token", "")
+    if not supplied or not hmac.compare_digest(supplied, expected):
+        return JSONResponse(status_code=401, content={"detail": "No autorizado."})
+
+    return await call_next(request)
+
 # Incluir routers modulares
 app.include_router(analysis_router)
 app.include_router(models_router)
@@ -38,27 +67,5 @@ def read_root():
         "servicio": "Microservicio de Procesamiento y Visión Artificial",
         "estado": "activo",
         "version": "2.0.0",
-        "sprint": "Sprint 2 - Pipeline OpenCV Real y Extracción Geométrica",
-        "endpoints": [
-            "/api/analyze",
-            "/api/models/status",
-            "/api/models/load",
-            "/predict (compatibilidad)"
-        ]
-    }
-
-# Endpoint de compatibilidad retrocompatible
-@app.post("/predict")
-async def predict_compat(file: UploadFile = File(...)):
-    """Endpoint de compatibilidad que reenvía a /api/analyze."""
-    from routers.analysis import analyze_stroke_image
-    res = await analyze_stroke_image(file=file, tipo_esperado="circulo")
-    return {
-        "risk_label": res["clasificacion"]["risk_label"],
-        "risk_score": res["clasificacion"]["risk_score"],
-        "features": {
-            "deviation": res["indicadores_cuantitativos"]["desviacion"],
-            "length": res["caracteristicas_geometricas"]["longitud_trazo"]
-        },
-        "detalles": res["detalles_computacionales"]
+        "mensaje": "Servicio interno disponible.",
     }

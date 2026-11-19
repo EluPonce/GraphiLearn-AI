@@ -1,195 +1,60 @@
-import React from 'react';
-import {
-  Users,
-  Compass,
-  Activity,
-  Cpu,
-  PlusCircle,
-  ArrowUpRight,
-  Sparkles,
-  Calendar,
-  GraduationCap,
-  School,
-  FileCheck2
-} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Activity, ArrowRight, CalendarDays, CheckCircle2, GraduationCap, RefreshCw, School, Users, UserRoundCheck, ClipboardList } from 'lucide-react';
 import StatusBadge from '../components/StatusBadge';
+import { formatLocalDate } from '../utils/dateFormat';
 
-export default function DashboardView({
-  students,
-  exercises,
-  activities,
-  setCurrentView,
-  setSelectedActivity,
-  user
-}) {
+export default function DashboardView({ activities = [], setCurrentView, setSelectedActivity, user }) {
   const isAdmin = user?.rol === 'administrador' || user?.role === 'administrador';
-  const processedCount = activities.filter(a => (a.status || '').toLowerCase().includes('procesad')).length;
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const handleSelectActivity = (activity) => {
+  const load = async () => {
+    setLoading(true); setError('');
+    try {
+      const response = await axios.get('/api/v1/dashboard');
+      setStats(response.data.stats || null);
+    } catch (requestError) {
+      setStats(null);
+      setError(requestError.response?.data?.message || 'No fue posible consultar las métricas del panel.');
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, [user?.rol, user?.role]);
+
+  const value = key => stats && stats[key] !== null && stats[key] !== undefined ? stats[key] : '—';
+  const metrics = isAdmin ? [
+    ['Estudiantes', 'total_estudiantes', Users, 'Inscripciones activas de la institución'],
+    ['Docentes', 'total_docentes', UserRoundCheck, 'Cuentas docentes de la institución'],
+    ['Cursos', 'total_cursos', GraduationCap, 'Aulas disponibles'],
+    ['Actividades programadas', 'actividades_programadas', CalendarDays, 'Programaciones activas'],
+    ['Trabajos registrados', 'trabajos_registrados', Activity, 'Registros individuales existentes'],
+    ['Trabajos pendientes', 'trabajos_pendientes', ClipboardList, 'Ejercicios programados aún sin registro'],
+  ] : [
+    ['Mis cursos', 'mis_cursos', GraduationCap, 'Aulas asignadas'],
+    ['Estudiantes', 'mis_estudiantes', Users, 'En tus cursos asignados'],
+    ['Actividades programadas', 'actividades_programadas', CalendarDays, 'Programaciones activas de tus cursos'],
+    ['Trabajos pendientes', 'trabajos_pendientes', ClipboardList, 'Ejercicios programados aún sin registro'],
+    ['Evaluaciones realizadas', 'evaluaciones_realizadas', CheckCircle2, 'Con valoración docente registrada'],
+  ];
+
+  const openActivity = activity => {
     setSelectedActivity(activity);
-    if ((activity.status || '').toLowerCase().includes('procesad')) {
-      setCurrentView('analysis-detail');
-    } else {
-      setCurrentView('activity-detail');
-    }
+    setCurrentView(activity.estado === 'procesado' ? 'analysis-detail' : 'activity-detail');
   };
 
-  return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Welcome Hero Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-sky-600 p-7 md:p-9 shadow-lg text-white">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-semibold">
-              <School className="w-3.5 h-3.5" />
-              <span>Nivel Inicial • Kínder y Pre-Kínder</span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white">
-              {isAdmin ? 'Panel Institucional GraphiLearn' : `Bienvenido(a), ${user?.nombre || 'Docente'}`}
-            </h2>
-            <p className="text-sm text-indigo-100 leading-relaxed font-medium">
-              Seguimiento cuantitativo del desarrollo grafomotor mediante análisis computacional del trazo en papel.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => setCurrentView('new-activity')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white text-indigo-700 hover:bg-indigo-50 text-sm font-bold shadow-md transition-all active:scale-[0.98]"
-            >
-              <PlusCircle className="w-4 h-4 text-indigo-600" />
-              <span>Nueva actividad</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('courses')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-800/60 hover:bg-indigo-800 text-white border border-indigo-400/40 text-sm font-medium transition-all"
-            >
-              <GraduationCap className="w-4 h-4" />
-              <span>Ver cursos</span>
-            </button>
-            <button
-              onClick={() => setCurrentView('students')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-800/60 hover:bg-indigo-800 text-white border border-indigo-400/40 text-sm font-medium transition-all"
-            >
-              <Users className="w-4 h-4" />
-              <span>Estudiantes</span>
-            </button>
-          </div>
-        </div>
+  return <div className="space-y-6 animate-in fade-in duration-300">
+    <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-700 via-indigo-700 to-sky-600 p-6 text-white shadow-lg sm:p-8">
+      <div className="relative z-10 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div className="max-w-2xl"><span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold"><School size={15}/> GraphiLearn · Nivel Inicial</span><h2 className="mt-3 text-2xl font-black sm:text-3xl">{isAdmin ? 'Panel institucional' : `Bienvenida, ${user?.nombre || 'docente'}`}</h2><p className="mt-2 text-sm text-indigo-100">{isAdmin ? 'Resumen de cursos, docentes y actividades programadas.' : 'Acceso rápido a tus aulas, trabajos y seguimiento pedagógico.'}</p></div>
+        <div className="flex flex-wrap gap-2">{isAdmin ? <button type="button" onClick={() => setCurrentView('programmed-activities')} className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-indigo-700">Programar actividad</button> : <button type="button" onClick={() => setCurrentView('activities')} className="rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-indigo-700">Abrir trabajos y evaluaciones</button>}<button type="button" onClick={() => setCurrentView('courses')} className="rounded-xl border border-white/40 bg-indigo-900/30 px-4 py-2.5 text-sm font-semibold text-white">{isAdmin ? 'Ver cursos' : 'Mis cursos'}</button></div>
       </div>
+    </header>
 
-      {/* Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Total Estudiantes</span>
-            <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-slate-800 mt-3 font-mono">{students.length}</p>
-          <p className="text-xs text-slate-600 mt-1">Registrados en el aula</p>
-        </div>
+    {error && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800"><span>{error} Las métricas se muestran como no disponibles, no como cero.</span><button type="button" onClick={load} className="inline-flex items-center gap-2 rounded-lg border border-rose-300 px-3 py-2 font-semibold"><RefreshCw size={15}/>Reintentar</button></div>}
+    <section aria-label="Resumen por rol" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      {metrics.map(([label, key, Icon, description], index) => <article key={key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-3xl font-black tabular-nums text-slate-900">{loading ? '…' : value(key)}</p></div><span className={`rounded-xl p-2.5 ${index % 2 ? 'bg-sky-50 text-sky-700' : 'bg-indigo-50 text-indigo-700'}`}><Icon size={20}/></span></div><p className="mt-2 text-xs text-slate-500">{description}</p></article>)}
+    </section>
 
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Patrones Base</span>
-            <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center">
-              <Compass className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-slate-800 mt-3 font-mono">{exercises.length}</p>
-          <p className="text-xs text-slate-600 mt-1">Línea, círculo, espiral, zigzag</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Actividades Registradas</span>
-            <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Activity className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-slate-800 mt-3 font-mono">{activities.length}</p>
-          <p className="text-xs text-slate-600 mt-1">Sesiones de práctica</p>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Trazos Procesados</span>
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <FileCheck2 className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="text-3xl font-black text-slate-800 mt-3 font-mono">{processedCount}</p>
-          <p className="text-xs text-slate-600 mt-1">Métricas calculadas</p>
-        </div>
-      </div>
-
-      {/* Section: Últimas Actividades */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div>
-            <h3 className="text-base font-bold text-slate-800">Últimas actividades en aula</h3>
-            <p className="text-xs text-slate-600 mt-0.5">Fichas de trabajo capturadas y evaluadas</p>
-          </div>
-          <button
-            onClick={() => setCurrentView('activities')}
-            className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-          >
-            <span>Ver todas</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {activities.length === 0 ? (
-          <div className="text-center py-10 text-slate-600 text-sm">
-            No hay actividades registradas aún.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-[11px] uppercase tracking-wider text-slate-600 border-b border-slate-100 bg-slate-50/70">
-                <tr>
-                  <th className="py-3 px-4 font-bold">Estudiante</th>
-                  <th className="py-3 px-4 font-bold">Ejercicio</th>
-                  <th className="py-3 px-4 font-bold">Fecha</th>
-                  <th className="py-3 px-4 font-bold">Estado</th>
-                  <th className="py-3 px-4 font-bold text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {activities.slice(0, 5).map((activity) => (
-                  <tr key={activity.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3.5 px-4 font-bold text-slate-800">
-                      {activity.studentName}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-700">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                        {activity.exerciseName}
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600 text-xs font-mono">
-                      {activity.date}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <StatusBadge status={activity.status} />
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => handleSelectActivity(activity)}
-                        className="text-xs px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold border border-indigo-200 transition-colors"
-                      >
-                        Ver detalle
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    {isAdmin ? <section className="grid gap-4 md:grid-cols-2"><button type="button" onClick={() => setCurrentView('teachers')} className="flex items-center justify-between rounded-2xl border bg-white p-5 text-left hover:border-indigo-300"><span><strong className="block text-slate-900">Gestionar docentes</strong><span className="text-sm text-slate-600">Cuentas y asignaciones por curso</span></span><ArrowRight className="text-indigo-600"/></button><button type="button" onClick={() => setCurrentView('students')} className="flex items-center justify-between rounded-2xl border bg-white p-5 text-left hover:border-indigo-300"><span><strong className="block text-slate-900">Gestionar estudiantes del aula</strong><span className="text-sm text-slate-600">Inscripciones y datos administrativos</span></span><ArrowRight className="text-indigo-600"/></button></section> : <section className="rounded-2xl border bg-white p-5"><div className="flex items-center justify-between gap-3"><div><h3 className="font-bold text-slate-900">Trabajos recientes</h3><p className="text-xs text-slate-600">Registros de estudiantes de tus cursos.</p></div><button type="button" onClick={() => setCurrentView('activities')} className="text-sm font-semibold text-indigo-700">Ver trabajos</button></div>{activities.length ? <div className="mt-4 divide-y">{activities.slice(0, 5).map(activity => <div key={activity.id} className="flex flex-wrap items-center justify-between gap-2 py-3"><div><p className="text-sm font-semibold text-slate-900">{activity.studentName} · {activity.exerciseName}</p><p className="text-xs text-slate-500">{formatLocalDate(activity.date)}</p></div><div className="flex items-center gap-2"><StatusBadge status={activity.status}/><button type="button" onClick={() => openActivity(activity)} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-indigo-700">Abrir</button></div></div>)}</div> : <p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No hay trabajos recientes disponibles.</p>}</section>}
+  </div>;
 }

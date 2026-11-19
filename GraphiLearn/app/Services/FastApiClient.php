@@ -13,11 +13,22 @@ class FastApiClient
 {
     protected string $baseUrl;
     protected int $timeout;
+    protected ?string $token;
 
     public function __construct()
     {
         $this->baseUrl = rtrim(config('services.ai_service.base_url', 'http://127.0.0.1:8001'), '/');
         $this->timeout = (int) config('services.ai_service.timeout', 30);
+        $this->token = config('services.ai_service.token');
+    }
+
+    protected function authenticatedRequest()
+    {
+        if (! is_string($this->token) || $this->token === '') {
+            throw new AiServiceUnavailableException('El token interno del servicio de IA no está configurado.');
+        }
+
+        return Http::withHeaders(['X-Internal-Token' => $this->token]);
     }
 
     /**
@@ -41,7 +52,7 @@ class FastApiClient
         $fileName     = basename($storageRelativePath);
 
         try {
-            $response = Http::timeout($this->timeout)
+            $response = $this->authenticatedRequest()->timeout($this->timeout)
                 ->attach('file', $fileContents, $fileName)
                 ->asMultipart()
                 ->post("{$this->baseUrl}/api/analyze", [
@@ -54,6 +65,8 @@ class FastApiClient
                 throw new AiServiceTimeoutException("Tiempo de espera agotado al conectar con el microservicio de IA ({$this->timeout}s).");
             }
             throw new AiServiceUnavailableException("No se pudo establecer conexión con el microservicio de IA en {$this->baseUrl}. Asegúrese de que el servicio esté activo.");
+        } catch (AiServiceException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new AiServiceException("Error en la solicitud HTTP al microservicio de IA: " . $e->getMessage(), 500, $e);
         }
@@ -82,7 +95,10 @@ class FastApiClient
     public function obtenerEstado(): array
     {
         try {
-            $response = Http::timeout(5)->get("{$this->baseUrl}/api/models/status");
+            if (! is_string($this->token) || $this->token === '') {
+                return ['disponible' => false, 'error' => 'Token del servicio no configurado'];
+            }
+            $response = $this->authenticatedRequest()->timeout(5)->get("{$this->baseUrl}/api/models/status");
             if ($response->successful()) {
                 return $response->json();
             }
@@ -96,14 +112,25 @@ class FastApiClient
     /**
      * Solicita al microservicio cargar un modelo entrenado específico.
      */
-    public function cargarModeloEnFastApi(string $filePath, ?string $versionName = null): bool
+    public function cargarModeloEnFastApi(string $modelId, ?string $versionName = null): bool
     {
         try {
-            $response = Http::timeout(10)->post("{$this->baseUrl}/api/models/load", [
-                'file_path' => $filePath,
+            $response = $this->authenticatedRequest()->timeout(10)->post("{$this->baseUrl}/api/models/load", [
+                'model_id' => $modelId,
                 'version_name' => $versionName,
             ]);
-            return $response->successful();
+            return $response->successful() && $response->json('loaded') === true
+                && $response->json('model_id') === $modelId;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    public function descargarModeloEnFastApi(): bool
+    {
+        try {
+            $response = $this->authenticatedRequest()->timeout(10)->post("{$this->baseUrl}/api/models/unload");
+            return $response->successful() && $response->json('loaded') === false;
         } catch (\Exception $e) {
             return false;
         }

@@ -9,12 +9,12 @@ class ExercisePolicy
 {
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->esDocente() || $user->esDireccion();
     }
 
     public function view(User $user, Exercise $exercise): bool
     {
-        return true;
+        return ($user->esDocente() || $user->esDireccion()) && $exercise->activo;
     }
 
     /**
@@ -22,7 +22,7 @@ class ExercisePolicy
      */
     public function create(User $user): bool
     {
-        return $user->esDocente() || $user->esAdministrador();
+        return false;
     }
 
     /**
@@ -30,7 +30,7 @@ class ExercisePolicy
      */
     public function update(User $user, Exercise $exercise): bool
     {
-        return $user->esDocente() || $user->esAdministrador();
+        return false;
     }
 
     /**
@@ -40,6 +40,6 @@ class ExercisePolicy
      */
     public function delete(User $user, Exercise $exercise): bool
     {
-        return $user->esAdministrador();
+        return false;
     }
 }

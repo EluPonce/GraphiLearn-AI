@@ -36,8 +36,10 @@ return [
     ],
 
     'ai_service' => [
+        'analysis_enabled' => (bool) env('ANALISIS_HABILITADO', false),
         'base_url' => env('AI_SERVICE_URL', 'http://127.0.0.1:8001'),
         'timeout'  => (int) env('AI_SERVICE_TIMEOUT', 30),
+        'token' => env('AI_SERVICE_TOKEN'),
         'root_path' => env('AI_SERVICE_ROOT', base_path('ai-service')),
     ],
 

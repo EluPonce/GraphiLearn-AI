@@ -24,6 +24,7 @@ class ExerciseController extends Controller
         Gate::authorize('viewAny', Exercise::class);
 
         $query = Exercise::query();
+        if ($request->user()->esDocente()) $query->where('activo', true);
 
         if ($request->filled('tipo_trazo')) {
             $query->where('tipo_trazo', $request->query('tipo_trazo'));
@@ -97,16 +98,10 @@ class ExerciseController extends Controller
     {
         Gate::authorize('delete', $exercise);
 
-        if ($exercise->actividades()->exists()) {
-            return response()->json([
-                'message' => 'No es posible eliminar el ejercicio porque tiene actividades registradas.',
-            ], 422);
-        }
-
-        $exercise->delete();
+        $exercise->update(['activo' => false]);
 
         return response()->json([
-            'message' => 'Ejercicio eliminado exitosamente.',
+            'message' => 'Ejercicio desactivado exitosamente.',
         ]);
     }
 }

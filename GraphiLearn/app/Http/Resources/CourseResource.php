@@ -19,6 +19,7 @@ class CourseResource extends JsonResource
             'nombre'            => $this->nombre,
             'nivel'             => $this->nivel,
             'gestion'           => $this->gestion,
+            'active'            => $this->active,
             'id_docente'        => $this->id_docente,
             'docente'           => $this->docente ? [
                 'id'     => $this->docente->id,
@@ -27,6 +28,12 @@ class CourseResource extends JsonResource
                 'rol'    => $this->docente->rol,
             ] : null,
             'estudiantes_count' => $this->estudiantes_count ?? $this->estudiantes()->count(),
+            'estudiantes'       => StudentResource::collection($this->whenLoaded('estudiantes')),
+            'actividades_programadas' => $this->whenLoaded('scheduledActivities', fn () => $this->scheduledActivities->map(function ($scheduled) {
+                $scheduled->setAttribute('executions_count', \App\Models\FotoEjercicio::where('scheduled_activity_id', $scheduled->id)->count());
+                $scheduled->setAttribute('evaluated_executions_count', \App\Models\FotoEjercicio::where('scheduled_activity_id', $scheduled->id)->whereNotNull('valoracion')->count());
+                return $scheduled;
+            })),
             'created_at'        => $this->created_at?->toIso8601String(),
         ];
     }

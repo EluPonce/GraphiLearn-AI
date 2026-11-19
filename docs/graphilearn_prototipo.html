@@ -1,0 +1,327 @@
+<title>GraphiLearn AI</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+/* Concepto: aplicación de aula, sidebar fija + área de trabajo; teal de marca, color semántico solo para S / ED / NA */
+:root{
+  --bg:#f3f6f6; --surface:#ffffff; --ink:#14201f; --muted:#5a6a68; --line:#d8e1e0;
+  --accent:#0f766e; --accent-ink:#ffffff; --accent-soft:#dcf1ee;
+  --s:#14632f; --s-bg:#d9f2e0; --ed:#7a4e00; --ed-bg:#faeec8; --na:#9b1c39; --na-bg:#f9dce3;
+  --pend:#2f4a78; --pend-bg:#dfe7f5; --none:#56676a; --none-bg:#e8eded;
+  --canvas:#0b0d10; --paper:#fbfaf6;
+  --display:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
+  --body:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --surface:#162120; --ink:#e7f0ee; --muted:#9db1ae; --line:#2a3a38;
+  --accent:#2dd4bf; --accent-ink:#06211e; --accent-soft:#12322f;
+  --s:#86e3a6; --s-bg:#173824; --ed:#f3c969; --ed-bg:#3b2e0c; --na:#f6a3b6; --na-bg:#431a28;
+  --pend:#aac3f2; --pend-bg:#1c2a44; --none:#9db1ae; --none-bg:#1f2c2b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#162120; --ink:#e7f0ee; --muted:#9db1ae; --line:#2a3a38;
+  --accent:#2dd4bf; --accent-ink:#06211e; --accent-soft:#12322f;
+  --s:#86e3a6; --s-bg:#173824; --ed:#f3c969; --ed-bg:#3b2e0c; --na:#f6a3b6; --na-bg:#431a28;
+  --pend:#aac3f2; --pend-bg:#1c2a44; --none:#9db1ae; --none-bg:#1f2c2b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
+button{font:inherit;color:inherit;cursor:pointer}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:26px}h2{font-size:19px}h3{font-size:16px}
+p{margin:0}
+.demo{max-width:1180px;margin:0 auto 12px;font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.demo b{color:var(--ink)}
+.shell{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:224px minmax(0,1fr);gap:20px;align-items:start}
+.side{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
+.brand{font-family:var(--display);font-weight:700;font-size:19px;display:flex;align-items:center;gap:8px}
+.brand i{width:26px;height:26px;border-radius:7px;background:var(--accent);display:inline-block;position:relative}
+.brand i::after{content:"";position:absolute;inset:7px;border:2px solid var(--accent-ink);border-radius:50%}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:12px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{text-align:left;border:0;background:none;padding:9px 10px;border-radius:8px;color:var(--muted);font-weight:500}
+.nav button[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.nav button:hover{background:var(--none-bg)}
+.who{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px;font-size:13px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:none;padding:7px 4px;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+main{min-width:0;display:flex;flex-direction:column;gap:18px}
+.crumbs{display:flex;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.crumbs button{border:0;background:none;padding:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}
+.head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.head p{color:var(--muted);margin-top:4px}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);padding:9px 16px;border-radius:9px;font-weight:600}
+.btn.ghost{background:none;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,button:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.meter{height:8px;border-radius:99px;background:var(--none-bg);overflow:hidden;margin:10px 0 6px}
+.meter span{display:block;height:100%;background:var(--accent)}
+.muted{color:var(--muted);font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:12.5px;font-weight:600;border:1px solid transparent;white-space:nowrap}
+.c-S{background:var(--s-bg);color:var(--s)}.c-ED{background:var(--ed-bg);color:var(--ed)}.c-NA{background:var(--na-bg);color:var(--na)}
+.c-P{background:var(--pend-bg);color:var(--pend)}.c-0{background:var(--none-bg);color:var(--none)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:99px;color:var(--muted);font-weight:500}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td button.cell{border:0;background:none;padding:0}
+td button.cell:hover .chip{filter:brightness(.95);box-shadow:0 0 0 2px var(--accent)}
+.link{border:0;background:none;padding:0;font-weight:600;text-align:left;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:12px}
+.legend span{display:flex;gap:6px;align-items:center}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.steps div{padding:6px 12px;border-radius:99px;font-size:13px;background:var(--none-bg);color:var(--muted);font-weight:500}
+.steps div.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.steps div.done{background:var(--accent-soft);color:var(--accent)}
+.stages{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.stages figure{margin:0;display:flex;flex-direction:column;gap:6px}
+.stages svg{width:100%;height:auto;border-radius:8px;border:1px solid var(--line);display:block}
+.stages figcaption{font-size:13px;color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px}
+.ind{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ind .bar{height:8px;border-radius:99px;background:var(--none-bg);overflow:hidden}
+.ind .bar span{display:block;height:100%;background:var(--accent)}
+.ind em{font-style:normal;font-weight:600;font-size:13px;text-align:right}
+.note{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:12px 14px;font-size:14px}
+.drop{border:2px dashed var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.opts{display:grid;gap:10px}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:12px;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:14px;align-items:start}
+.opt .chip{font-size:15px;padding:6px 14px}
+.opt[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.opt b{display:block;margin-bottom:2px}
+textarea,select{width:100%;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px}
+textarea{min-height:84px;resize:vertical}
+label{font-weight:600;font-size:14px;display:block;margin-bottom:6px}
+.stack{height:22px;border-radius:7px;overflow:hidden;display:flex;background:var(--none-bg)}
+.stack span{display:block;height:100%}
+.sg-S{background:var(--s)}.sg-ED{background:#d9a21b}.sg-NA{background:var(--na)}.sg-P{background:var(--pend)}
+.rowx{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center;padding:8px 0}
+.mini{display:flex;gap:6px;align-items:flex-end;height:48px}
+.mini span{width:18px;background:var(--accent);border-radius:3px 3px 0 0;display:block}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:10px;font-weight:500;z-index:20}
+ul.plain{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between}
+  .nav{flex-direction:row;flex-wrap:wrap}
+  .who{border-top:0;padding-top:0;width:100%}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .ind{grid-template-columns:1fr 70px}.ind .bar{grid-column:1/-1;order:3}
+}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .2s ease-out}@keyframes in{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
+</style>
+
+<div class="demo"><b>Prototipo del flujo.</b> Todo lo que ves son datos de ejemplo. Los resultados del análisis son ilustrativos y no vienen de fotos reales.</div>
+<div class="shell">
+  <aside class="side" aria-label="Menú">
+    <div class="brand"><i></i><span>GraphiLearn AI<small>Nivel Inicial y Guarderías</small></span></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="who">
+      <div class="seg" role="group" aria-label="Ver como">
+        <button data-act="role" data-v="doc" id="r-doc">Docente</button>
+        <button data-act="role" data-v="dir" id="r-dir">Dirección</button>
+      </div>
+      <div id="whoami"></div>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+const EJ=[{id:'linea',n:'Línea recta'},{id:'circulos',n:'Círculos'},{id:'zigzag',n:'Zigzag'},{id:'espiral',n:'Espiral'}];
+const TRI={1:{nivel:1,tam:'grandes',r:30,sp:52},2:{nivel:2,tam:'medianas',r:22,sp:40},3:{nivel:3,tam:'pequeñas',r:15,sp:28}};
+const CURSOS=[
+ {n:'Kinder A',doc:'Prof. Carlos Morales',est:['Valentina Ríos','Mateo Pérez','Lucía Fernández','Santiago Mendoza','Camila Quispe','Diego Arce','Emma Vaca','Joaquín Lara']},
+ {n:'Kinder B',doc:'Prof. Carlos Morales',est:['Sofía Rojas','Thiago Salas','Isabella Cruz','Gael Mamani','Renata Soliz','Bruno Terán']},
+ {n:'Pre-Kinder',doc:'Prof. Rosa Vargas',est:['Alma Choque','Dylan Padilla','Zoe Ibáñez','Ian Guzmán','Nora Flores']}
+];
+const RUBRICA={
+ linea:{S:'Sigue la línea de principio a fin con pocas salidas.',ED:'Sigue la línea, pero se sale con frecuencia.',NA:'Se aparta de la línea o no llega al final.'},
+ circulos:{S:'Repasa los círculos y los cierra.',ED:'Repasa con irregularidades; algunos no cierran.',NA:'No logra repasar o cerrar los círculos.'},
+ zigzag:{S:'Marca los ángulos y mantiene la dirección.',ED:'Marca los ángulos con imprecisión.',NA:'No sigue los cambios de dirección.'},
+ espiral:{S:'Mantiene el giro hacia el centro sin cortes.',ED:'Gira con cortes o se aparta en algunas vueltas.',NA:'No logra seguir el giro.'}
+};
+const LONG={S:'Satisfactorio',ED:'En desarrollo',NA:'Necesita apoyo'};
+const rnd=s=>{const x=Math.sin(s*12.9898)*43758.5453;return x-Math.floor(x)};
+const V={};
+CURSOS.forEach((c,ci)=>{V[ci]={1:[],2:[],3:[]};c.est.forEach((_,si)=>{
+  V[ci][1].push(EJ.map((_,ej)=>{const r=rnd(ci*100+si*10+ej+1);return r<.1?0:r<.18?'P':r<.5?'S':r<.82?'ED':'NA'}));
+  V[ci][2].push([0,0,0,0]);V[ci][3].push([0,0,0,0]);});});
+const OBS={'0-1':[{t:'1',x:'Agarra el lápiz con toda la mano. Se cansa a mitad de la hoja.'}]};
+
+const st={role:'doc',screen:'cursos',c:0,t:1,e:0,ej:0,step:1,sel:null,note:''};
+const mine=()=>st.role==='doc'?[0,1]:[0,1,2];
+const chip=c=>c===0?'<span class="chip c-0">Sin foto</span>':c==='P'?'<span class="chip c-P">Foto lista</span>':`<span class="chip c-${c}">${c}</span>`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const score=(c,e,ej)=>clamp(.4+.55*rnd(c*77+e*13+ej*5+3),.3,.97);
+const word=v=>v>=.8?'Alto':v>=.6?'Medio':'Bajo';
+const suggest=v=>v>=.78?'S':v>=.58?'ED':'NA';
+const toast=m=>{const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2200)};
+
+/* ---------- dibujo de las etapas ---------- */
+function strokes(ej,t){
+  const T=TRI[t],out=[];
+  if(ej===0){const p=[];for(let i=0;i<=60;i++)p.push([20+i*6,60]);out.push(p)}
+  if(ej===1){for(let k=0;k<5;k++){const p=[],cx=48+76*k,r=T.r;for(let i=0;i<=48;i++){const a=i/48*Math.PI*2;p.push([cx+r*Math.cos(a),60+r*Math.sin(a)])}out.push(p)}}
+  if(ej===2){const pts=[];for(let i=0;i<=9;i++)pts.push([20+i*40,i%2?88:32]);const p=[];for(let i=0;i<9;i++)for(let j=0;j<8;j++)p.push([pts[i][0]+(pts[i+1][0]-pts[i][0])*j/8,pts[i][1]+(pts[i+1][1]-pts[i][1])*j/8]);p.push(pts[9]);out.push(p)}
+  if(ej===3){const p=[];for(let i=0;i<=140;i++){const a=i/140*Math.PI*6,r=T.sp*i/140;p.push([200+r*Math.cos(a)*1.3,60+r*Math.sin(a)*.95])}out.push(p)}
+  return out;
+}
+const path=(p,close)=>'M'+p.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join('L')+(close?'Z':'');
+function sheet(ej,t,sc,seed,stage){
+  const base=strokes(ej,t),amp=(1-sc)*6+.8;
+  const kid=base.map((p,k)=>p.map((q,i)=>[q[0]+amp*Math.sin(i*.7+seed+k),q[1]+amp*Math.cos(i*1.1+seed*1.3+k)]));
+  const dark=stage>=2;
+  let s=`<svg viewBox="0 0 400 120" role="img" aria-label="Etapa ${stage+1} del procesamiento"><rect width="400" height="120" fill="${dark?'#0b0d10':'#fbfaf6'}"/>`;
+  if(stage<2){s+=`<g fill="none" stroke="#b7bbc2" stroke-width="1.6" stroke-dasharray="5 4">${base.map(p=>`<path d="${path(p)}"/>`).join('')}</g>`}
+  const col=stage===0||stage===1?'#2f4b9a':stage===2?'#ffffff':'#2dd4bf',w=stage===3?1.1:stage===2?3.2:2.2;
+  s+=`<g fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${kid.map(p=>`<path d="${path(p)}"/>`).join('')}</g>`;
+  if(stage<2){[[8,8],[392,8],[8,112],[392,112]].forEach(m=>s+=`<rect x="${m[0]-5}" y="${m[1]-5}" width="10" height="10" fill="#222"/>`)}
+  s+='</svg>';
+  return stage===1?`<div style="filter:grayscale(1)">${s}</div>`:s;
+}
+
+/* ---------- piezas ---------- */
+const crumbs=a=>`<div class="crumbs">${a.map((x,i)=>x.go?`<button data-act="go" data-v="${x.go}">${x.l}</button>`:`<span>${x.l}</span>`).join('<span>/</span>')}</div>`;
+const legend=()=>`<div class="legend"><span>${chip('S')} Satisfactorio</span><span>${chip('ED')} En desarrollo: está en proceso de lograrlo, es lo esperable a esta edad</span><span>${chip('NA')} Necesita apoyo</span><span>${chip('P')} Foto analizada, falta tu valoración</span><span>${chip(0)} Sin foto</span></div>`;
+function counts(ci,t,ej){const r={S:0,ED:0,NA:0,P:0,0:0};V[ci][t].forEach(row=>r[row[ej]]++);return r}
+function stack(r,n){return `<div class="stack">${['S','ED','NA','P'].map(k=>r[k]?`<span class="sg-${k}" style="width:${r[k]/n*100}%"></span>`:'').join('')}</div>`}
+function done(ci,t){return V[ci][t].filter(row=>row.every(v=>['S','ED','NA'].includes(v))).length}
+function pending(ci,t){const rows=V[ci][t];for(let e=0;e<rows.length;e++)for(let j=0;j<4;j++)if(rows[e][j]===0||rows[e][j]==='P')return{e,j};return null}
+const triTabs=()=>`<div class="tabs" role="group" aria-label="Trimestre">${[1,2,3].map(t=>`<button data-act="tri" data-v="${t}" aria-pressed="${st.t===t}">Trimestre ${t}</button>`).join('')}</div>`;
+const nivel=t=>`Nivel ${TRI[t].nivel}: figuras ${TRI[t].tam}`;
+
+/* ---------- pantallas ---------- */
+function vCursos(){
+  return `<div class="head"><div><h1>Mis cursos</h1><p>Elige un curso para ver o registrar su evaluación del trimestre.</p></div></div>
+  <div class="grid">${mine().map(ci=>{const c=CURSOS[ci],n=c.est.length,d=done(ci,1);return `<div class="card"><h2>${c.n}</h2><p class="muted">${c.est.length} estudiantes</p>
+   <p style="margin-top:12px"><span class="chip c-P">Trimestre 1</span> <span class="muted">${nivel(1)}</span></p>
+   <div class="meter"><span style="width:${d/n*100}%"></span></div><p class="muted">${d} de ${n} estudiantes con los 4 ejercicios valorados</p>
+   <button class="btn" style="margin-top:14px" data-act="curso" data-v="${ci}">Abrir evaluación</button></div>`}).join('')}</div>`;
+}
+function vCurso(){
+  const c=CURSOS[st.c],rows=V[st.c][st.t],nx=pending(st.c,st.t);
+  return crumbs([{l:'Mis cursos',go:'cursos'},{l:c.n}])+
+  `<div class="head"><div><h1>${c.n}: evaluación</h1><p>${nivel(st.t)}. Los 4 ejercicios se hacen juntos en la misma hoja.</p></div>
+   ${nx?`<button class="btn" data-act="cell" data-e="${nx.e}" data-j="${nx.j}">Continuar: ${c.est[nx.e].split(' ')[0]}, ${EJ[nx.j].n}</button>`:''}</div>
+  ${triTabs()}
+  <div class="card"><div class="scroll"><table><thead><tr><th>Estudiante</th>${EJ.map(e=>`<th>${e.n}</th>`).join('')}</tr></thead><tbody>
+  ${c.est.map((nm,e)=>`<tr><td><button class="link" data-act="est" data-e="${e}">${nm}</button></td>${rows[e].map((v,j)=>`<td><button class="cell" data-act="cell" data-e="${e}" data-j="${j}" aria-label="${nm}, ${EJ[j].n}">${chip(v)}</button></td>`).join('')}</tr>`).join('')}
+  </tbody></table></div>${legend()}</div>`;
+}
+function vCaptura(){
+  const c=CURSOS[st.c],nm=c.est[st.e],ej=EJ[st.ej],cur=V[st.c][st.t][st.e][st.ej];
+  const sc=score(st.c,st.e,st.ej),seed=st.c*9+st.e*3+st.ej,ind=[['Ajuste a la plantilla',sc],['Suavidad del trazo',clamp(sc-.08+.1*rnd(seed),.25,.97)],['Continuidad',clamp(sc+.07,.3,.98)],['Regularidad',clamp(sc-.03+.06*rnd(seed+2),.25,.97)]];
+  const sug=suggest(ind.reduce((a,b)=>a+b[1],0)/4);
+  const sx=n=>`<div class="steps"><div class="${st.step===1?'on':st.step>1?'done':''}">1 Foto</div><div class="${st.step===2?'on':st.step>2?'done':''}">2 Análisis</div><div class="${st.step===3?'on':st.step>3?'done':''}">3 Valoración</div></div>`;
+  let body='';
+  if(st.step===1){
+    body=`<div class="drop"><svg width="220" height="130" viewBox="0 0 220 130" role="img" aria-label="Hoja con cuatro marcas en las esquinas"><rect x="20" y="10" width="180" height="110" rx="4" fill="none" stroke="currentColor" stroke-opacity=".4"/>${[[20,10],[200,10],[20,120],[200,120]].map(m=>`<rect x="${m[0]-6}" y="${m[1]-6}" width="12" height="12" fill="currentColor"/>`).join('')}<text x="110" y="70" text-anchor="middle" font-size="12" fill="currentColor" fill-opacity=".7">Hoja completa</text></svg>
+    <p>Toma la foto con la hoja completa y las 4 marcas de las esquinas visibles.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center"><button class="btn" data-act="step" data-v="2">Usar foto de ejemplo</button><button class="btn ghost" data-act="step" data-v="2">Subir desde la galería</button></div></div>`;
+  }
+  if(st.step===2){
+    const lbl=['Foto original','Escala de grises','Trazo separado de la plantilla','Esqueleto de 1 píxel'];
+    body=`<div class="note">Marcas detectadas, foto enfocada y con buena luz. La hoja se enderezó y se recortó el ejercicio.</div>
+    <div class="stages" style="margin-top:14px">${lbl.map((l,i)=>`<figure>${sheet(st.ej,st.t,sc,seed,i)}<figcaption>${i+1}. ${l}</figcaption></figure>`).join('')}</div>
+    <div class="cols" style="margin-top:18px"><div><h3>Lo que midió el sistema</h3><p class="muted">Valores de ejemplo. Cada indicador compara el trazo con la plantilla de este nivel.</p>
+    ${ind.map(i=>`<div class="ind"><span>${i[0]}</span><div class="bar"><span style="width:${i[1]*100}%"></span></div><em>${word(i[1])} (${i[1].toFixed(2)})</em></div>`).join('')}</div>
+    <div><h3>Sugerencia del sistema</h3><p style="margin:8px 0">${chip(sug)} <span class="muted">${LONG[sug]}</span></p>
+    <p class="muted">Es solo una ayuda. La valoración final la decides tú.</p>
+    ${st.ej===1?`<h3 style="margin-top:14px">5 círculos analizados</h3><div class="mini" aria-label="Ajuste de cada círculo">${[0,1,2,3,4].map(k=>`<span style="height:${clamp(sc+.2*(rnd(seed+k)-.5),.25,.98)*100}%"></span>`).join('')}</div><p class="muted">Ajuste de cada círculo, de izquierda a derecha.</p>`:''}</div></div>
+    <div style="margin-top:16px"><button class="btn" data-act="step" data-v="3">Continuar a la valoración</button></div>`;
+  }
+  if(st.step===3){
+    body=`<div class="head"><div><h3>¿Cómo valoras este ejercicio?</h3><p>Sugerencia del sistema: ${chip(sug)}. Rúbrica de ejemplo, la define la docente.</p></div></div>
+    <div class="opts" style="margin:12px 0">${['S','ED','NA'].map(k=>`<button class="opt" data-act="pick" data-v="${k}" aria-pressed="${st.sel===k}">${chip(k)}<span><b>${LONG[k]}</b><span class="muted">${RUBRICA[ej.id][k]}</span></span></button>`).join('')}</div>
+    <label for="obs">Observación (opcional)</label><textarea id="obs" placeholder="Ej.: agarra el lápiz con toda la mano">${st.note}</textarea>
+    <div style="margin-top:14px"><button class="btn" data-act="save" ${st.sel?'':'disabled'}>Guardar valoración</button></div>`;
+  }
+  if(st.step===4){
+    const nx=pending(st.c,st.t);
+    body=`<div class="note"><b>Guardado.</b> ${nm}, ${ej.n}: ${chip(V[st.c][st.t][st.e][st.ej])}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">${nx?`<button class="btn" data-act="cell" data-e="${nx.e}" data-j="${nx.j}">Siguiente: ${c.est[nx.e].split(' ')[0]}, ${EJ[nx.j].n}</button>`:''}<button class="btn ghost" data-act="go" data-v="curso">Volver al cuadro</button></div>`;
+  }
+  return crumbs([{l:'Mis cursos',go:'cursos'},{l:c.n,go:'curso'},{l:`${nm}, ${ej.n}`}])+
+  `<div class="head"><div><h1>${ej.n}</h1><p>${nm} · Trimestre ${st.t} · ${nivel(st.t)}</p></div>${cur&&cur!=='P'&&st.step<4?`<div>Valoración actual: ${chip(cur)}</div>`:''}</div>
+  <div class="card">${sx()}${body}</div>`;
+}
+function vFicha(){
+  const c=CURSOS[st.c],nm=c.est[st.e],ro=st.role==='dir',key=st.c+'-'+st.e,obs=OBS[key]||[];
+  return crumbs([{l:ro?'Cursos':'Mis cursos',go:ro?'informes':'cursos'},{l:c.n,go:ro?'informeCurso':'curso'},{l:nm}])+
+  `<div class="head"><div><h1>${nm}</h1><p>${c.n} · ${c.doc}</p></div></div>
+  <div class="card"><h2>Valoración por trimestre</h2><div class="scroll"><table><thead><tr><th>Ejercicio</th>${[1,2,3].map(t=>`<th>T${t} · ${TRI[t].tam}</th>`).join('')}</tr></thead><tbody>
+  ${EJ.map((e,j)=>`<tr><td>${e.n}</td>${[1,2,3].map(t=>`<td>${V[st.c][t][st.e][j]===0&&t>1?'<span class="muted">Aún no evaluado</span>':chip(V[st.c][t][st.e][j])}</td>`).join('')}</tr>`).join('')}
+  </tbody></table></div>
+  <div class="note" style="margin-top:14px">Las figuras son más chicas en cada trimestre. Mantener la valoración con figuras más pequeñas ya es avance.</div></div>
+  <div class="card"><h2>Observaciones</h2>${obs.length?obs.map(o=>`<p style="margin-top:10px"><span class="chip c-P">T${o.t}</span> ${o.x}</p>`).join(''):'<p class="muted" style="margin-top:8px">Todavía no hay observaciones.</p>'}
+  ${ro?'':`<div style="margin-top:14px"><label for="oadd">Nueva observación</label><textarea id="oadd"></textarea><button class="btn" style="margin-top:10px" data-act="obsadd">Agregar</button></div>`}</div>`;
+}
+function resumen(ci){
+  const c=CURSOS[ci],n=c.est.length,d=done(ci,1);
+  const need=c.est.map((nm,e)=>({nm,e,k:V[ci][1][e].filter(v=>v==='NA').length})).filter(x=>x.k>=2);
+  return `<div class="card"><h2>Trimestre 1 · ${nivel(1)}</h2><p class="muted" style="margin-top:4px">${d} de ${n} estudiantes con los 4 ejercicios valorados</p>
+  <div style="margin-top:12px">${EJ.map((e,j)=>{const r=counts(ci,1,j);return `<div class="rowx"><b>${e.n}</b><div>${stack(r,n)}<p class="muted" style="margin-top:4px">S ${r.S} · ED ${r.ED} · NA ${r.NA} · falta valorar ${r.P+r[0]}</p></div></div>`}).join('')}</div>${legend()}</div>
+  <div class="card"><h2>Requieren observación</h2><p class="muted" style="margin-top:4px">Estudiantes con NA en 2 o más ejercicios.</p>
+  ${need.length?`<ul class="plain">${need.map(x=>`<li><button class="link" data-act="est" data-c="${ci}" data-e="${x.e}">${x.nm}</button>: NA en ${x.k} ejercicios</li>`).join('')}</ul>`:'<p class="muted" style="margin-top:8px">Ningún estudiante por ahora.</p>'}</div>`;
+}
+function vInformes(){
+  if(st.role==='dir'){
+    return `<div class="head"><div><h1>Cursos</h1><p>Resumen por curso. Entra a un curso para ver a sus estudiantes. Solo lectura.</p></div></div>
+    <div class="card"><div class="scroll"><table><thead><tr><th>Curso</th><th>Docente</th><th>Evaluación completa</th><th>S / ED / NA</th><th></th></tr></thead><tbody>
+    ${[0,1,2].map(ci=>{const n=CURSOS[ci].est.length,t=['S','ED','NA'].map(k=>V[ci][1].flat().filter(v=>v===k).length),tot=t[0]+t[1]+t[2]||1;return `<tr><td><b>${CURSOS[ci].n}</b></td><td>${CURSOS[ci].doc}</td><td>${done(ci,1)} de ${n}</td>
+    <td style="min-width:180px"><div class="stack"><span class="sg-S" style="width:${t[0]/tot*100}%"></span><span class="sg-ED" style="width:${t[1]/tot*100}%"></span><span class="sg-NA" style="width:${t[2]/tot*100}%"></span></div><span class="muted">${t[0]} / ${t[1]} / ${t[2]}</span></td>
+    <td><button class="btn ghost" data-act="infcurso" data-v="${ci}">Ver curso</button></td></tr>`}).join('')}</tbody></table></div></div>`;
+  }
+  const ci=st.c;
+  return `<div class="head"><div><h1>Informes</h1><p>Resumen del curso por trimestre. Útil para decidir dónde reforzar.</p></div><button class="btn ghost" data-act="pdf">Exportar PDF</button></div>
+  <div style="max-width:320px"><label for="cs">Curso</label><select id="cs" data-act="selc">${mine().map(i=>`<option value="${i}" ${i===ci?'selected':''}>${CURSOS[i].n}</option>`).join('')}</select></div>${resumen(ci)}`;
+}
+function vInformeCurso(){
+  const ci=st.c,c=CURSOS[ci];
+  return crumbs([{l:'Cursos',go:'informes'},{l:c.n}])+`<div class="head"><div><h1>${c.n}</h1><p>${c.doc} · solo lectura</p></div></div>${resumen(ci)}
+  <div class="card"><h2>Estudiantes</h2><div class="scroll"><table><thead><tr><th>Estudiante</th>${EJ.map(e=>`<th>${e.n}</th>`).join('')}</tr></thead><tbody>
+  ${c.est.map((nm,e)=>`<tr><td><button class="link" data-act="est" data-c="${ci}" data-e="${e}">${nm}</button></td>${V[ci][1][e].map(v=>`<td>${chip(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+function vPerfil(){
+  return `<div class="head"><div><h1>Perfil</h1></div></div><div class="card"><p><b>${st.role==='doc'?'Prof. Carlos Morales':'Dirección'}</b></p><p class="muted">${st.role==='doc'?'Docente · Kinder A y Kinder B':'Ve el resumen de todos los cursos. No valora ni edita.'}</p></div>`;
+}
+
+/* ---------- render ---------- */
+function render(){
+  document.getElementById('r-doc').setAttribute('aria-pressed',st.role==='doc');
+  document.getElementById('r-dir').setAttribute('aria-pressed',st.role==='dir');
+  const items=st.role==='doc'?[['cursos','Mis cursos'],['informes','Informes'],['perfil','Perfil']]:[['informes','Cursos'],['perfil','Perfil']];
+  const grp={cursos:['cursos','curso','captura','ficha'],informes:['informes','informeCurso'],perfil:['perfil']};
+  const cur=st.role==='dir'&&st.screen==='ficha'?'informes':st.screen;
+  document.getElementById('nav').innerHTML=items.map(([k,l])=>`<button data-act="go" data-v="${k}" ${grp[k].includes(cur)||(st.role==='dir'&&k==='informes'&&['ficha'].includes(st.screen))?'aria-current="page"':''}>${l}</button>`).join('');
+  document.getElementById('whoami').innerHTML=st.role==='doc'?'<b>Prof. Carlos Morales</b><br><span class="muted">Docente</span>':'<b>Dirección</b><br><span class="muted">Solo lectura</span>';
+  const f={cursos:vCursos,curso:vCurso,captura:vCaptura,ficha:vFicha,informes:vInformes,informeCurso:vInformeCurso,perfil:vPerfil}[st.screen];
+  document.getElementById('main').innerHTML=f();
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t||t.tagName==='SELECT')return;
+  const a=t.dataset.act,v=t.dataset.v;
+  if(a==='role'){st.role=v;st.screen=v==='doc'?'cursos':'informes';st.c=0;}
+  else if(a==='go'){st.screen=v;if(v==='informes'&&st.role==='doc'&&!mine().includes(st.c))st.c=0;}
+  else if(a==='curso'){st.c=+v;st.t=1;st.screen='curso';}
+  else if(a==='tri'){st.t=+v;}
+  else if(a==='cell'){st.e=+t.dataset.e;st.ej=+t.dataset.j;const cur=V[st.c][st.t][st.e][st.ej];st.step=cur===0?1:2;st.sel=['S','ED','NA'].includes(cur)?cur:null;st.note='';st.screen='captura';}
+  else if(a==='est'){if(t.dataset.c!==undefined)st.c=+t.dataset.c;st.e=+t.dataset.e;st.screen='ficha';}
+  else if(a==='step'){st.step=+v;}
+  else if(a==='pick'){st.sel=v;const o=document.getElementById('obs');if(o)st.note=o.value;}
+  else if(a==='save'){const o=document.getElementById('obs');if(o&&o.value.trim()){const k=st.c+'-'+st.e;(OBS[k]=OBS[k]||[]).push({t:String(st.t),x:o.value.trim()});}V[st.c][st.t][st.e][st.ej]=st.sel;st.step=4;toast('Valoración guardada');}
+  else if(a==='obsadd'){const o=document.getElementById('oadd');if(o&&o.value.trim()){const k=st.c+'-'+st.e;(OBS[k]=OBS[k]||[]).push({t:'1',x:o.value.trim()});toast('Observación agregada');}}
+  else if(a==='infcurso'){st.c=+v;st.screen='informeCurso';}
+  else if(a==='pdf'){toast('La exportación a PDF estará en la versión real');return;}
+  render();window.scrollTo({top:0});
+});
+document.addEventListener('change',e=>{if(e.target.id==='cs'){st.c=+e.target.value;render();}});
+render();
+</script>

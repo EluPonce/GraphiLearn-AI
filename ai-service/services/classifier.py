@@ -18,29 +18,32 @@ FEATURE_NAMES = [
 
 class RiskClassifier:
     """
-    Gestor del clasificador de Machine Learning para detección orientativa de riesgo grafomotor.
-    Si no existe un modelo clínico validado cargado, opera en modo seguro 'NO DISPONIBLE'.
+    Clasificador experimental. Solo acepta sugerencias S, ED o NA ya presentes
+    como clases del modelo; no transforma etiquetas de riesgo en valoraciones.
     """
     def __init__(self, model_path: Optional[str] = None):
         self.model_path = model_path
         self.model = None
         self.metadata = {}
         self.version_name = None
+        self.model_id = None
         if model_path and os.path.exists(model_path):
             self.load_model(model_path)
 
-    def load_model(self, path: str):
+    def load_model(self, path: str, model_id: Optional[str] = None):
         if not os.path.exists(path):
             raise FileNotFoundError(f"El archivo del modelo no existe: {path}")
         loaded = joblib.load(path)
+        self.model_path = path
+        self.model_id = model_id
         if isinstance(loaded, dict) and "model" in loaded:
             self.model = loaded["model"]
             self.metadata = loaded.get("metadata", {})
-            self.version_name = self.metadata.get("version", os.path.basename(path))
+            self.version_name = self.metadata.get("version", model_id or os.path.basename(path))
         else:
             self.model = loaded
             self.metadata = {}
-            self.version_name = os.path.basename(path)
+            self.version_name = model_id or os.path.basename(path)
 
     def is_available(self) -> bool:
         return self.model is not None
@@ -51,18 +54,15 @@ class RiskClassifier:
         indicators: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
-        Ejecuta la inferencia si hay un modelo validado cargado.
-        Si no hay modelo, devuelve una respuesta explícita y controlada de NO DISPONIBLE.
+        Ejecuta inferencia solo si hay modelo cargado y su clase pertenece a S, ED o NA.
         """
         if not self.is_available():
             return {
                 "disponible": False,
-                "risk_label": "no_disponible",
-                "risk_score": None,
+                "sugerencia": None,
                 "model_version": None,
                 "mensaje": (
-                    "Clasificación orientativa no disponible: pendiente de entrenamiento "
-                    "y validación con dataset clínico especializado de nivel inicial."
+                    "Sugerencia no disponible: no hay un modelo experimental cargado."
                 ),
             }
 
@@ -84,36 +84,22 @@ class RiskClassifier:
 
             prediction = self.model.predict([x])[0]
 
-            # Obtener probabilidad calibrada si el modelo lo soporta
-            risk_score = None
-            if hasattr(self.model, "predict_proba"):
-                probas = self.model.predict_proba([x])[0]
-                risk_score = round(float(probas[-1]), 4)
-
-            # Normalizar etiqueta de salida
-            label_map = {
-                0: "bajo_riesgo",
-                1: "riesgo_potencial",
-                "bajo_riesgo": "bajo_riesgo",
-                "riesgo_potencial": "riesgo_potencial",
-            }
-            risk_label = label_map.get(prediction, str(prediction))
+            suggestion = str(prediction).upper()
+            if suggestion not in {"S", "ED", "NA"}:
+                suggestion = None
 
             return {
                 "disponible": True,
-                "risk_label": risk_label,
-                "risk_score": risk_score,
+                "sugerencia": suggestion,
                 "model_version": self.version_name,
                 "mensaje": (
-                    "Clasificación orientativa calculada. No constituye diagnóstico clínico; "
-                    "sujeta a revisión y validación pedagógica."
+                    "Sugerencia experimental calculada; la valoración final corresponde a la docente."
                 ),
             }
         except Exception as e:
             return {
                 "disponible": False,
-                "risk_label": "no_disponible",
-                "risk_score": None,
+                "sugerencia": None,
                 "model_version": self.version_name,
                 "mensaje": f"Error durante la inferencia del modelo: {str(e)}",
             }

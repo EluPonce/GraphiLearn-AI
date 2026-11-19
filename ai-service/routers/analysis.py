@@ -104,9 +104,6 @@ async def analyze_stroke_image(
                 "7. Ajuste y comparación frente al patrón geométrico de referencia",
                 "8. Consulta del clasificador supervisado",
             ],
-            "aviso_pedagogico": (
-                "Características calculadas a partir de la captura estática en papel. "
-                "Esta herramienta es de apoyo al docente y no constituye diagnóstico clínico."
-            ),
+            "aviso_pedagogico": "La sugerencia es experimental y la valoración final corresponde a la docente.",
         }
     }

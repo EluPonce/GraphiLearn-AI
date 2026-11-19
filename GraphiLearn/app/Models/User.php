@@ -27,6 +27,7 @@ class User extends Authenticatable
         'correo',
         'password',
         'rol',
+        'active',
     ];
 
     /**
@@ -49,6 +50,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
+            'active'            => 'boolean',
         ];
     }
 
@@ -96,6 +98,11 @@ class User extends Authenticatable
         return $this->rol === 'docente';
     }
 
+    public function esDireccion(): bool
+    {
+        return $this->rol === 'direccion';
+    }
+
     /**
      * Central access rule for courses in the user's institution or assignment.
      */
@@ -105,11 +112,12 @@ class User extends Authenticatable
             return false;
         }
 
-        if ($this->esAdministrador()) {
+        if ($this->esDireccion()) {
             return $this->institution_id !== null
                 && (int) $course->institution_id === (int) $this->institution_id;
         }
 
+        // Historical course records remain readable after deactivation.
         return $this->esDocente() && (int) $course->id_docente === (int) $this->id;
     }
 
@@ -117,7 +125,7 @@ class User extends Authenticatable
     {
         $query = Course::query();
 
-        if ($this->esAdministrador()) {
+        if ($this->esDireccion()) {
             return $query->where('institution_id', $this->institution_id);
         }
 

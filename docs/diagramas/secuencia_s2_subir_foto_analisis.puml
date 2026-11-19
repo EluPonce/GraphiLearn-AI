@@ -1,0 +1,43 @@
+@startuml Secuencia_S2_SubirFotoAnalisis
+title Sprint 2 — Subir foto y analizar (HU-06, HU-07 a HU-11)
+autonumber
+actor Docente
+boundary "EvaluationCaptureView\n(React)" as UI
+control "EvaluationFlowController" as EC
+participant "FastApiClient" as FC
+participant "FastAPI\n/api/analyze" as FA
+entity "FotoEjercicio" as FE
+entity "Analisis" as AN
+database "PostgreSQL" as DB
+
+Docente -> UI : paso 1: elige la foto y pulsa "Subir foto"
+UI -> EC : POST /api/v1/evaluaciones/{e}/estudiantes/{s}/ejercicios/{ej}/foto
+EC -> EC : StoreFotoEjercicioRequest: JPG/PNG, máx. 5 MB
+EC -> EC : Gate::authorize("update", foto)
+EC -> FE : update {ruta_imagen, estado: foto_lista}
+FE -> DB : UPDATE fotos_ejercicio
+alt ANALISIS_HABILITADO activo
+  EC -> FC : analizarImagen(ruta, tipo_trazo)
+  FC -> FA : POST multipart + X-Internal-Token
+  alt servicio disponible
+    FA -> FA : grises, filtro bilateral, Otsu,\nfiltrado de componentes, Zhang–Suen (HU-07)
+    FA -> FA : 7 características + posición (HU-08)
+    FA -> FA : desviación, rugosidad, continuidad, regularidad (HU-09)
+    FA -> FA : sugerencia o null + aviso pedagógico (HU-10)
+    FA --> FC : 200 JSON del análisis
+    FC --> EC : resultado
+    EC -> AN : updateOrCreate(id_foto) (HU-11)
+    AN -> DB : INSERT/UPDATE analisis
+    EC --> UI : 201 {analisis_disponible: true, analisis}
+    UI --> Docente : paso 2: Precisión, Firmeza, Fluidez, Regularidad\n+ sugerencia + aviso
+  else servicio caído o con error
+    FA --> FC : error o sin respuesta
+    FC --> EC : excepción (se registra en el log)
+    EC --> UI : 201 {analisis_disponible: false}
+    UI --> Docente : "Análisis no disponible por ahora"
+  end
+else análisis desactivado
+  EC --> UI : 201 {analisis_disponible: false}
+  UI --> Docente : "Análisis no disponible por ahora"
+end
+@enduml

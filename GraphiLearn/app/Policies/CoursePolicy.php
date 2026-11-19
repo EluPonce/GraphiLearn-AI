@@ -9,7 +9,7 @@ class CoursePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->esDocente() || $user->esAdministrador();
+        return $user->esDocente() || $user->esDireccion();
     }
 
     public function view(User $user, Course $course): bool
@@ -19,16 +19,16 @@ class CoursePolicy
 
     public function create(User $user): bool
     {
-        return $user->esAdministrador() && $user->institution_id !== null;
+        return false;
     }
 
     public function update(User $user, Course $course): bool
     {
-        return $user->esAdministrador() && $user->puedeAccederAlCurso($course);
+        return false;
     }
 
     public function delete(User $user, Course $course): bool
     {
-        return $this->update($user, $course);
+        return false;
     }
 }

@@ -33,7 +33,7 @@ class Exercise extends Model
      */
     public function actividades(): HasMany
     {
-        return $this->hasMany(Actividad::class, 'id_ejercicio');
+        return $this->hasMany(FotoEjercicio::class, 'id_ejercicio');
     }
 
     /**

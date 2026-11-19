@@ -24,12 +24,13 @@ class ActividadPolicy
 
     public function update(User $user, Actividad $actividad): bool
     {
+        // Autoriza análisis y evaluación de una ejecución propia; no existe CRUD genérico de update.
         return $this->puedeAcceder($user, $actividad);
     }
 
     public function delete(User $user, Actividad $actividad): bool
     {
-        return $this->puedeAcceder($user, $actividad);
+        return false;
     }
 
     private function puedeAcceder(User $user, Actividad $actividad): bool

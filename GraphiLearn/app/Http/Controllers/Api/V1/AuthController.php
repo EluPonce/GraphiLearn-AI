@@ -20,21 +20,9 @@ class AuthController extends Controller
      */
     public function register(\App\Http\Requests\Auth\RegisterRequest $request): JsonResponse
     {
-        $user = User::create([
-            'nombre' => $request->validated('nombre'),
-            'correo' => $request->validated('correo'),
-            'password' => Hash::make($request->validated('password')),
-            'rol' => $request->validated('rol'),
-        ]);
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
         return response()->json([
-            'message'      => 'Usuario registrado exitosamente.',
-            'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'user'         => new UserResource($user),
-        ], 201);
+            'message' => 'El registro público está deshabilitado. Solicite la creación de la cuenta a la administración de la institución.',
+        ], 403);
     }
 
     /**
@@ -46,7 +34,7 @@ class AuthController extends Controller
     {
         $user = User::where('correo', $request->validated('correo'))->first();
 
-        if (! $user || ! Hash::check($request->validated('password'), $user->password)) {
+        if (! $user || ! Hash::check($request->validated('password'), $user->password) || $user->active === false) {
             throw ValidationException::withMessages([
                 'correo' => ['Las credenciales proporcionadas son incorrectas.'],
             ]);

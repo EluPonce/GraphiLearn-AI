@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import {
   Compass,
   Plus,
@@ -11,7 +12,7 @@ import {
 import StatusBadge from '../components/StatusBadge';
 import Modal from '../components/Modal';
 
-export default function ExercisesView({ exercises, setExercises }) {
+export default function ExercisesView({ exercises, setExercises, isAdmin = false }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExercise, setEditingExercise] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -47,10 +48,13 @@ export default function ExercisesView({ exercises, setExercises }) {
     setIsModalOpen(true);
   };
 
-  const toggleStatus = (exercise) => {
+  const toggleStatus = async (exercise) => {
     const newStatus = exercise.status === 'Activo' ? 'Inactivo' : 'Activo';
-    setExercises(prev => prev.map(e => e.id === exercise.id ? { ...e, status: newStatus } : e));
-    showFeedback(`Estado del ejercicio cambiado a ${newStatus}.`, 'success');
+    try {
+      await axios.patch(`/api/v1/exercises/${exercise.id}`, { activo: newStatus === 'Activo' });
+      setExercises(prev => prev.map(e => e.id === exercise.id ? { ...e, status: newStatus } : e));
+      showFeedback(`Estado del ejercicio cambiado a ${newStatus}.`, 'success');
+    } catch (error) { showFeedback(error.response?.data?.message || 'No fue posible cambiar el estado.', 'error'); }
   };
 
   const handleSubmit = (e) => {
@@ -61,28 +65,20 @@ export default function ExercisesView({ exercises, setExercises }) {
       return;
     }
 
-    if (editingExercise) {
-      setExercises(prev => prev.map(e => e.id === editingExercise.id ? {
-        ...e,
-        name: formData.name.trim(),
-        patternType: formData.patternType,
-        description: formData.description.trim(),
-        status: formData.status
-      } : e));
-      showFeedback('Ejercicio grafomotor actualizado correctamente.', 'success');
-    } else {
-      const newExercise = {
-        id: Date.now(),
-        name: formData.name.trim(),
-        patternType: formData.patternType,
-        description: formData.description.trim(),
-        status: formData.status
-      };
-      setExercises(prev => [newExercise, ...prev]);
-      showFeedback('Ejercicio registrado exitosamente.', 'success');
-    }
-
-    setIsModalOpen(false);
+    const codes = { 'Líneas': 'linea', 'Círculos': 'circulo', 'Espirales': 'espiral', Zigzag: 'zigzag' };
+    const payload = { nombre: formData.name.trim(), tipo_trazo: codes[formData.patternType], descripcion: formData.description.trim() };
+    const save = async () => {
+      try {
+        if (editingExercise) await axios.put(`/api/v1/exercises/${editingExercise.id}`, payload);
+        else await axios.post('/api/v1/exercises', payload);
+        const response = await axios.get('/api/v1/exercises?per_page=50');
+        const labels = { linea: 'Líneas', circulo: 'Círculos', espiral: 'Espirales', zigzag: 'Zigzag' };
+        setExercises((response.data.data || []).map(x => ({ id: x.id, name: x.nombre, patternType: labels[x.tipo_trazo], description: x.descripcion || '', status: x.activo ? 'Activo' : 'Inactivo' })));
+        setIsModalOpen(false);
+        showFeedback('Catálogo guardado.', 'success');
+      } catch (error) { showFeedback(error.response?.data?.message || 'No fue posible guardar el ejercicio.', 'error'); }
+    };
+    save();
   };
 
   const showFeedback = (message, type) => {
@@ -100,13 +96,13 @@ export default function ExercisesView({ exercises, setExercises }) {
             Catálogo pedagógico de patrones de trazo base para la evaluación de motricidad fina
           </p>
         </div>
-        <button
+        {isAdmin && <button
           onClick={openCreateModal}
           className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-100 transition-all active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" />
           <span>+ Nuevo ejercicio</span>
-        </button>
+        </button>}
       </div>
 
       {/* Feedback Banner */}
@@ -165,14 +161,14 @@ export default function ExercisesView({ exercises, setExercises }) {
                   </td>
                   <td className="py-4 px-6 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
+                        {isAdmin && <button
                         onClick={() => openEditModal(exercise)}
                         title="Editar ejercicio"
                         className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
-                      <button
+                        </button>}
+                        {isAdmin && <button
                         onClick={() => toggleStatus(exercise)}
                         title={exercise.status === 'Activo' ? 'Desactivar ejercicio' : 'Activar ejercicio'}
                         className={`p-2 rounded-xl border transition-colors ${
@@ -182,7 +178,7 @@ export default function ExercisesView({ exercises, setExercises }) {
                         }`}
                       >
                         <Power className="w-4 h-4" />
-                      </button>
+                        </button>}
                     </div>
                   </td>
                 </tr>

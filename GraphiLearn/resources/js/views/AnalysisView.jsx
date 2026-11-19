@@ -134,7 +134,7 @@ export default function AnalysisView({
   ];
 
   const isModelAvailable = !!clas.disponible;
-  const riskLabel = clas.risk_label || res.risk_label || 'no_disponible';
+  const suggestion = clas.sugerencia ?? res.sugerencia ?? null;
   const estadoRevision = res.estado_revision || activeActivity.estadoRevision || 'pendiente';
 
   return (
@@ -218,25 +218,24 @@ export default function AnalysisView({
               </h3>
             </div>
 
-            {!isModelAvailable || riskLabel === 'no_disponible' ? (
+            {!isModelAvailable || suggestion === null ? (
               <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 space-y-2">
                 <div className="flex items-center gap-2 text-amber-800 font-bold text-xs">
                   <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Clasificación no disponible</span>
+                  <span>Sugerencia no disponible</span>
                 </div>
                 <p className="text-[11px] text-amber-900 leading-relaxed">
-                  No se cuenta con un modelo de Machine Learning validado con dataset clínico para niños de nivel inicial.
-                  Las características cuantitativas han sido extraídas y preservadas de forma objetiva sin asignar riesgo arbitrario.
+                  No hay un modelo experimental que sugiera S, ED o NA. El análisis geométrico se conserva para revisión docente.
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
                 <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
                   <span className="text-[10px] uppercase font-bold text-slate-600 block">
-                    Etiqueta Orientativa
+                    Sugerencia del sistema
                   </span>
                   <span className="text-sm font-black text-indigo-700">
-                    {riskLabel === 'bajo_riesgo' ? 'Bajo Riesgo' : 'Riesgo Potencial'}
+                    {suggestion}
                   </span>
                 </div>
 
@@ -253,7 +252,7 @@ export default function AnalysisView({
             )}
 
             <div className="pt-2 text-[11px] text-slate-600 leading-relaxed border-t border-slate-100">
-              <span className="font-bold text-slate-700">Nota ética:</span> El sistema no emite diagnóstico clínico. Toda categorización orientativa requiere la revisión del educador.
+              <span className="font-bold text-slate-700">Nota:</span> La sugerencia es experimental. La valoración final siempre corresponde a la docente.
             </div>
           </div>
         </div>

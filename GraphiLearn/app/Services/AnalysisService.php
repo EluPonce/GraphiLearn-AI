@@ -101,8 +101,7 @@ class AnalysisService
                     'rugosidad'                => $ind['rugosidad'] ?? null,
                     'continuidad'              => $ind['continuidad'] ?? null,
                     'regularidad'              => $ind['regularidad'] ?? null,
-                    'risk_label'               => $clas['risk_label'] ?? 'no_disponible',
-                    'risk_score'               => $clas['risk_score'] ?? null,
+                    'sugerencia'               => $clas['sugerencia'] ?? null,
                     'model_version_id'         => $modelVersionId,
                     'estado'                   => 'procesado',
                     'estado_revision'          => 'pendiente', // Obligatorio por HU-11: inicia en pendiente

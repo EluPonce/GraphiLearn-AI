@@ -1,0 +1,119 @@
+@startuml Clases_Sprint3
+!pragma layout smetana
+title Sprint 3 — Diagrama de clases final (con enumeraciones y restricciones)
+hide methods
+skinparam classAttributeIconSize 0
+
+class Institucion {
+  - id : Integer
+  - nombre : String
+  - direccion : String
+}
+class Usuario {
+  - id : Integer
+  - nombre : String
+  - correo : String {único}
+  - contrasena : String
+  - rol : Rol
+  - activo : Boolean
+}
+class Curso {
+  - id : Integer
+  - nombre : String
+  - nivel : String
+  - gestion : String
+  - activo : Boolean
+}
+class Estudiante {
+  - id : Integer
+  - nombre : String
+  - fecha_nacimiento : Date
+}
+class Ejercicio {
+  - id : Integer
+  - nombre : String
+  - tipo_trazo : TipoTrazo
+  - descripcion : String
+  - activo : Boolean
+}
+class Evaluacion {
+  - id : Integer
+  - trimestre : Integer {1..3}
+  - nivel : Integer {1..3}
+  - tamano_figura_mm : Decimal
+  - fecha : Date
+}
+note bottom of Evaluacion : Única por (curso, trimestre)
+class FotoEjercicio {
+  - id : Integer
+  - estado : EstadoFoto
+  - ruta_imagen : String
+  - valoracion : Valoracion
+  - valorado_en : DateTime
+  - fecha : Date
+}
+note bottom of FotoEjercicio : Única por (evaluación, estudiante, ejercicio)
+class Analisis {
+  - id : Integer
+  - tipo_trazo : TipoTrazo
+  - caracteristicas : JSON
+  - indicadores : JSON
+  - sugerencia : Valoracion [0..1]
+  - rutas_etapas : JSON
+  - estado : String
+  - detalles_computacionales : JSON
+}
+note bottom of Analisis : Uno por foto; guarda la versión\ndel modelo que lo produjo
+class Observacion {
+  - id : Integer
+  - texto : String
+  - fecha : DateTime
+}
+class VersionModelo {
+  - id : Integer
+  - nombre : String
+  - version : String
+  - algoritmo : String
+  - ruta_archivo : String
+  - metricas : JSON
+  - activo : Boolean
+}
+enum Rol {
+  docente
+  direccion
+  administrador
+}
+enum TipoTrazo {
+  linea
+  circulo
+  zigzag
+  espiral
+}
+enum EstadoFoto {
+  sin_foto
+  foto_lista
+  valorado
+}
+enum Valoracion {
+  S
+  ED
+  NA
+}
+
+Institucion "1" -- "0..*" Usuario : pertenece
+Institucion "1" -- "0..*" Curso : tiene
+Usuario "0..1" -- "0..*" Curso : imparte
+Curso "1" -- "0..*" Estudiante : tiene
+Curso "1" -- "0..3" Evaluacion : se evalúa
+Evaluacion "1" -- "0..*" FotoEjercicio : contiene
+Estudiante "1" -- "0..*" FotoEjercicio : realiza
+Ejercicio "1" -- "0..*" FotoEjercicio : corresponde
+Usuario "0..1" -- "0..*" FotoEjercicio : valora
+FotoEjercicio "1" -- "0..1" Analisis : genera
+VersionModelo "0..1" -- "0..*" Analisis : produce
+Usuario "0..1" -- "0..*" VersionModelo : registra
+Estudiante "1" -- "0..*" Observacion : sobre
+Evaluacion "0..1" -- "0..*" Observacion : en
+Ejercicio "0..1" -- "0..*" Observacion : de
+Usuario "0..1" -- "0..*" Observacion : escribe
+@enduml

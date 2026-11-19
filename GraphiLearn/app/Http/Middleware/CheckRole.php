@@ -23,6 +23,10 @@ class CheckRole
             return response()->json(['message' => 'No autenticado.'], 401);
         }
 
+        if ($user->active === false) {
+            return response()->json(['message' => 'La cuenta está desactivada.'], 403);
+        }
+
         $allowedRoles = [];
         foreach ($roles as $role) {
             foreach (explode(',', $role) as $r) {

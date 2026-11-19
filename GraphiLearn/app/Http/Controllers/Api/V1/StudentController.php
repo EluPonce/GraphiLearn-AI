@@ -28,6 +28,10 @@ class StudentController extends Controller
         $query = Student::query()->with('curso')
             ->whereIn('id_curso', $user->cursosAccesibles()->select('id'));
 
+        if ($user->esAdministrador() && $request->boolean('include_inactive')) {
+            $query->withTrashed();
+        }
+
         if ($request->filled('id_curso')) {
             $query->where('id_curso', $request->query('id_curso'));
         }
@@ -55,7 +59,7 @@ class StudentController extends Controller
         $user = $request->user();
         $course = Course::findOrFail($request->validated('id_curso'));
 
-        if (! $user->puedeAccederAlCurso($course)) {
+        if (! $course->active || ! $user->puedeAccederAlCurso($course)) {
             return response()->json([
                 'message' => 'No tiene permisos para asignar estudiantes a este curso.',
             ], 403);
@@ -111,7 +115,7 @@ class StudentController extends Controller
 
         if ($request->validated('id_curso')) {
             $targetCourse = Course::findOrFail($request->validated('id_curso'));
-            if (! $request->user()->puedeAccederAlCurso($targetCourse)) {
+            if (! $targetCourse->active || ! $request->user()->puedeAccederAlCurso($targetCourse)) {
                 return response()->json([
                     'message' => 'No tiene permisos para mover este estudiante al curso indicado.',
                 ], 403);
@@ -140,6 +144,18 @@ class StudentController extends Controller
 
         return response()->json([
             'message' => 'Estudiante eliminado exitosamente.',
+        ]);
+    }
+
+    public function restore(Request $request, int $studentId): JsonResponse
+    {
+        $student = Student::withTrashed()->with('curso')->findOrFail($studentId);
+        Gate::authorize('restore', $student);
+        $student->restore();
+
+        return response()->json([
+            'message' => 'Inscripción reactivada exitosamente.',
+            'data' => new StudentResource($student->fresh('curso')),
         ]);
     }
 }

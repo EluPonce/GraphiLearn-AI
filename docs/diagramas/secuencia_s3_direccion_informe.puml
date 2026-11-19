@@ -1,0 +1,32 @@
+@startuml Secuencia_S3_DireccionInforme
+title Sprint 3 — HU-22 Cursos de la institución y HU-21 Informe del curso (Dirección, solo lectura)
+autonumber
+actor "Dirección" as DIR
+boundary "DirectionCoursesView" as LI
+boundary "Curso en solo lectura\n(EvaluationGridView + ResumenInforme)" as CU
+control "CheckRole" as MW
+control "EvaluationFlowController" as EC
+database "PostgreSQL" as DB
+
+DIR -> LI : abre "Cursos"
+LI -> MW : GET /api/v1/direccion/cursos
+MW -> EC : directionCourses() (role:direccion)
+EC -> DB : cursos de su institución + docente + conteos S/ED/NA
+EC --> LI : [{curso, docente, estudiantes_completos, valoraciones}]
+LI --> DIR : tabla de cursos con "Ver curso"
+DIR -> CU : pulsa "Ver curso"
+par informe del trimestre
+  CU -> EC : GET /api/v1/informes/curso/{id}?trimestre=t
+  EC -> EC : Gate::authorize("view", curso)
+  EC -> DB : conteos por ejercicio, completitud,\nestudiantes con NA en 2 o más ejercicios
+  EC --> CU : {conteos, completitud, requieren_observacion}
+else cuadro del curso
+  CU -> EC : GET /api/v1/cursos/{id}/evaluaciones/{t}
+  EC --> CU : {evaluacion, estudiantes x 4 casillas}
+end
+CU --> DIR : aviso "no emite diagnóstico" + resumen + tabla\n(sin botones para crear, subir ni valorar)
+opt intento de valorar (no disponible en la interfaz)
+  DIR -> MW : PUT .../valoracion
+  MW --> DIR : 403
+end
+@enduml

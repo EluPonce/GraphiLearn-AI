@@ -56,14 +56,17 @@ class ModelVersionController extends Controller
 
     public function activate(ModelVersion $modelVersion): JsonResponse
     {
-        $serviceRelativePath = $this->resolveModelPathForService($modelVersion->file_path);
-        if ($serviceRelativePath === null) {
+        if ($this->resolveModelPathForService($modelVersion->file_path) === null) {
             return response()->json([
                 'message' => 'No se puede activar el modelo porque el archivo no existe dentro del directorio configurado.',
             ], 422);
         }
 
-        $this->fastApiClient->cargarModeloEnFastApi($serviceRelativePath, $modelVersion->version);
+        if (! $this->fastApiClient->cargarModeloEnFastApi($modelVersion->version, $modelVersion->version)) {
+            return response()->json([
+                'message' => 'FastAPI no confirmó la carga del modelo registrado; no se cambió la versión activa.',
+            ], 503);
+        }
 
         DB::transaction(function () use ($modelVersion) {
             ModelVersion::where('active', true)->update(['active' => false]);
@@ -78,6 +81,12 @@ class ModelVersionController extends Controller
 
     public function deactivate(ModelVersion $modelVersion): JsonResponse
     {
+        if ($modelVersion->active && ! $this->fastApiClient->descargarModeloEnFastApi()) {
+            return response()->json([
+                'message' => 'FastAPI no confirmó la descarga del modelo; no se cambió su estado registrado.',
+            ], 503);
+        }
+
         $modelVersion->update(['active' => false]);
 
         return response()->json([
