@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Menu, GraduationCap, FileText, UserCircle, Cpu, UserCheck, Users } from 'lucide-react';
 import Sidebar from './components/Sidebar';
+import LandingView from './views/LandingView';
 import LoginView from './views/LoginView';
 import DashboardView from './views/DashboardView';
 import StudentsView from './views/StudentsView';
@@ -37,6 +39,12 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  // Estado del menú lateral en dispositivos móviles
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Control de vista pública: Landing Page Corporativa vs Pantalla de Login
+  const [showLogin, setShowLogin] = useState(false);
+
   // Setup axios default authorization header if token exists
   useEffect(() => {
     const token = sessionStorage.getItem('token');
@@ -46,11 +54,7 @@ export default function App() {
   }, []);
 
   // Current Navigation View
-  const [currentView, setCurrentView] = useState(() => {
-    const saved = sessionStorage.getItem('user');
-    const role = saved ? JSON.parse(saved).rol : null;
-    return role === 'administrador' ? 'model-versions' : 'courses';
-  });
+  const [currentView, setCurrentView] = useState('courses');
 
   // Initial Mock Data (Section 14: Datos de prueba requeridos)
   const [students, setStudents] = useState([]);
@@ -128,7 +132,7 @@ export default function App() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setCurrentUser(userData);
     setIsAuthenticated(true);
-    setCurrentView(userData?.rol === 'administrador' ? 'model-versions' : 'courses');
+    setCurrentView('courses');
   };
 
   const handleLogout = async () => {
@@ -167,19 +171,46 @@ export default function App() {
     setCurrentView('student-profile');
   };
 
-  // Render Login View if unauthenticated
+  // Render Landing Page o Login si no está autenticado
   if (!isAuthenticated) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+    if (showLogin) {
+      return (
+        <LoginView
+          onLoginSuccess={handleLoginSuccess}
+          onBackToLanding={() => setShowLogin(false)}
+        />
+      );
+    }
+    return <LandingView onGoToLogin={() => setShowLogin(true)} />;
   }
 
   return (
       <div className="gl-page">
+        {/* Barra superior solo en móvil: botón hamburguesa y título */}
+        <div className="md:hidden flex items-center justify-between p-3 mb-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs">
+          <button
+            type="button"
+            className="gl-hamburger"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Abrir menú"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-600 animate-pulse" />
+            <span className="text-sm font-semibold tracking-wide">GraphiLearn AI</span>
+          </div>
+          <div className="w-8" />
+        </div>
+
         <div className="gl-shell">
           <Sidebar
             currentView={currentView === 'student-sheet' && sheetStudent?.from === 'reports' ? 'reports' : currentView}
             setCurrentView={setCurrentView}
             onLogout={handleLogout}
             user={currentUser}
+            isOpen={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)}
           />
           <div className="gl-workspace">
             <main className="gl-main">
@@ -194,7 +225,7 @@ export default function App() {
             />
           )}
 
-          {currentUser?.rol === 'docente' && currentView === 'reports' && (
+          {['docente', 'direccion'].includes(currentUser?.rol) && currentView === 'reports' && (
             <CourseReportView onOpenStudent={(estudiante, curso) => { setEvaluationCourse(curso); openSheet(estudiante.id_estudiante, 'reports'); }} />
           )}
           {/* Legado: informe por estudiante anterior al flujo de Evaluación (ya no se muestra). */}
@@ -337,6 +368,82 @@ export default function App() {
             </main>
           </div>
         </div>
+
+        {/* Barra de navegación inferior móvil (PWA Bottom Bar) */}
+        <nav className="gl-bottomnav" aria-label="Navegación móvil rápida">
+          {currentUser?.rol === 'administrador' ? (
+            <>
+              <button
+                type="button"
+                className="gl-bottomnav-btn"
+                aria-current={currentView === 'teachers' ? 'page' : undefined}
+                onClick={() => setCurrentView('teachers')}
+              >
+                <UserCheck size={20} />
+                <span>Docentes</span>
+              </button>
+              <button
+                type="button"
+                className="gl-bottomnav-btn"
+                aria-current={currentView === 'students' ? 'page' : undefined}
+                onClick={() => setCurrentView('students')}
+              >
+                <Users size={20} />
+                <span>Alumnos</span>
+              </button>
+              <button
+                type="button"
+                className="gl-bottomnav-btn"
+                aria-current={currentView === 'model-versions' ? 'page' : undefined}
+                onClick={() => setCurrentView('model-versions')}
+              >
+                <Cpu size={20} />
+                <span>Modelos</span>
+              </button>
+              <button
+                type="button"
+                className="gl-bottomnav-btn"
+                aria-current={currentView === 'profile' ? 'page' : undefined}
+                onClick={() => setCurrentView('profile')}
+              >
+                <UserCircle size={20} />
+                <span>Perfil</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="gl-bottomnav-btn"
+                aria-current={['courses', 'course-evaluation', 'evaluation-capture', 'direction-course', 'student-sheet'].includes(currentView) ? 'page' : undefined}
+                onClick={() => setCurrentView('courses')}
+              >
+                <GraduationCap size={20} />
+                <span>Cursos</span>
+              </button>
+              {['docente', 'direccion'].includes(currentUser?.rol) && (
+                <button
+                  type="button"
+                  className="gl-bottomnav-btn"
+                  aria-current={currentView === 'reports' ? 'page' : undefined}
+                  onClick={() => setCurrentView('reports')}
+                >
+                  <FileText size={20} />
+                  <span>Informes</span>
+                </button>
+              )}
+              <button
+                type="button"
+                className="gl-bottomnav-btn"
+                aria-current={currentView === 'profile' ? 'page' : undefined}
+                onClick={() => setCurrentView('profile')}
+              >
+                <UserCircle size={20} />
+                <span>Perfil</span>
+              </button>
+            </>
+          )}
+        </nav>
       </div>
   );
 }

@@ -140,5 +140,7 @@ class DatabaseSeeder extends Seeder
         foreach ($exercises as $exerciseData) {
             Exercise::create($exerciseData);
         }
+
+        $this->call(ModelVersionSeeder::class);
     }
 }

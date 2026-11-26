@@ -307,3 +307,143 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .gl-rowx { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: center; padding: 8px 0; }
 .gl-plain { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; list-style: disc; }
 .gl-obs-cell { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); max-width: 260px; }
+
+/* ============================================================
+   MOBILE-FIRST PWA ENHANCEMENTS
+   - Navbar inferior en móvil (tipo app nativa)
+   - Botón hamburguesa para abrir/cerrar sidebar
+   - Zonas táctiles mínimas 44×44px (WCAG)
+   - Safe area insets para notch / home indicator (iPhone)
+   ============================================================ */
+
+/* Botón hamburguesa: solo visible en móvil */
+.gl-hamburger {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    cursor: pointer;
+    flex: 0 0 auto;
+}
+
+/* Overlay para cerrar sidebar en móvil */
+.gl-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 90;
+}
+.gl-overlay.open { display: block; }
+
+/* Navbar inferior en móvil */
+.gl-bottomnav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding: 6px 8px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    gap: 4px;
+    align-items: stretch;
+}
+.gl-bottomnav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 4px;
+    min-height: 52px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    -webkit-tap-highlight-color: transparent;
+}
+.gl-bottomnav-btn[aria-current='page'] {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+}
+.gl-bottomnav-btn svg { flex: 0 0 auto; }
+
+/* Ajuste de scroll en móvil para dejar espacio al navbar inferior */
+@media (max-width: 600px) {
+    .gl-hamburger { display: flex; }
+    .gl-bottomnav { display: flex; }
+
+    /* El shell sigue siendo 1 columna pero la sidebar se convierte en drawer */
+    .gl-shell { grid-template-columns: minmax(0, 1fr); }
+
+    /* Sidebar = drawer lateral deslizable */
+    .gl-sidebar {
+        position: fixed !important;
+        top: 0;
+        left: -280px;
+        bottom: 0;
+        z-index: 95;
+        width: 260px;
+        height: 100dvh;
+        border-radius: 0 18px 18px 0;
+        border: none;
+        border-right: 1px solid var(--line);
+        overflow-y: auto;
+        transition: left .25s cubic-bezier(.4,0,.2,1);
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        gap: 16px;
+        padding: 20px 14px;
+        padding-top: calc(20px + env(safe-area-inset-top));
+    }
+    .gl-sidebar.open { left: 0; }
+    .gl-nav { flex-direction: column !important; width: 100% !important; }
+    .gl-nav-button { width: 100% !important; flex: none !important; padding: 12px 10px !important; min-height: 44px; }
+    .gl-account { flex-direction: column !important; padding-top: 14px; }
+
+    /* Espacio inferior para el bottomnav */
+    .gl-page {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    }
+
+    /* Botones más grandes para dedos */
+    .gl-btn { min-height: 44px; padding: 10px 18px; font-size: 15px; }
+    .gl-opt { padding: 16px; }
+    .gl-opt .gl-chip { font-size: 16px; padding: 8px 16px; }
+
+    /* Tabla de evaluación: scroll horizontal con scroll snap */
+    .gl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory; }
+
+    /* Drop zone de captura de foto: más grande */
+    .gl-drop { padding: 32px 16px; }
+
+    /* Input de cámara: botón grande, full width */
+    .gl-drop input[type='file'] { width: 100%; }
+
+    /* Título principal más pequeño en móvil */
+    .gl-h1 { font-size: 20px; }
+    .gl-h2 { font-size: 16px; }
+
+    /* Ocultar navbar fijo viejo (el de arriba) si existe */
+    header.h-16 { display: none; }
+}
+
+@media (max-width: 380px) {
+    .gl-page { padding: 8px; padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+    .gl-sidebar { width: 230px; }
+    .gl-card { padding: 14px; border-radius: 10px; }
+}
